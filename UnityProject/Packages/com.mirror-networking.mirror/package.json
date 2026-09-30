@@ -1,0 +1,7 @@
+{
+  "name": "com.mirror-networking.mirror",
+  "version": "96.11.3",
+  "displayName": "Mirror",
+  "unity": "2021.3",
+  "description": "Mirror Networking 96.11.3, repackaged locally from the official GitHub release unitypackage."
+}

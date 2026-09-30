@@ -20,6 +20,18 @@
       "source": "embedded",
       "dependencies": {}
     },
+    "com.mirror-networking.mirror": {
+      "version": "file:com.mirror-networking.mirror",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
+    "com.mirror.steamworks.net": {
+      "version": "file:com.mirror.steamworks.net",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
     "com.tuyoogame.yooasset": {
       "version": "file:YooAsset",
       "depth": 0,
@@ -252,13 +264,6 @@
       "dependencies": {
         "com.unity.test-framework": "1.1.33"
       },
-      "url": "https://packages.unity.com"
-    },
-    "com.unity.ide.vscode": {
-      "version": "1.2.5",
-      "depth": 0,
-      "source": "registry",
-      "dependencies": {},
       "url": "https://packages.unity.com"
     },
     "com.unity.mathematics": {
