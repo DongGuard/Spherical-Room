@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using UnityEngine.SceneManagement;
 using YooAsset;
+// Unity 6.3 新增了 UnityEngine.SceneManagement.SceneHandle，与 YooAsset.SceneHandle 冲突，这里显式指定使用 YooAsset 的类型。
+using SceneHandle = YooAsset.SceneHandle;
 
 namespace TEngine
 {

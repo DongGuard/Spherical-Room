@@ -1,5 +1,6 @@
 #if UNITY_STANDALONE_WIN
 using Steamworks;
+using TEngine;
 using UnityEngine;
 
 namespace GameLogic
@@ -36,6 +37,7 @@ namespace GameLogic
             // 获取玩家昵称
             string playerName = SteamFriends.GetPersonaName();
             Debug.Log("Steam API Initialization failed! SteamSDK初始化成功！" + " " + "玩家昵称: " + playerName);
+            GameEvent.Send(Constant.GameEvent.CloseLoading);
         }
 
         public void OnUpdate()

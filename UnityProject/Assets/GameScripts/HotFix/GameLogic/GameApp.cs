@@ -35,8 +35,6 @@ public partial class GameApp
         GameModule.SteamModule.Active(); // 只在编辑器下执行
 #elif UNITY_STANDALONE_WIN
         GameModule.PCDebugModule.Active();
-#elif UNITY_ANDROID || UNITY_IOS
-    GameModule.TapTap.Active();  // 在安卓和iOS下执行
 #endif
     }
 
