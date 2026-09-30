@@ -1,0 +1,8 @@
+Key,Type,Desc,English,Chinese,ChineseTraditional,Japanese
+DialogMaterial,Material,,MaokenZhuDialog,MaokenZhuDialog,MaokenZhuDialog,MaokenZhuDialog
+Languages,TextMeshPFont,,MaoKenZhuYuanTi-MaokenZhuyuanTi-2 SDF,MaoKenZhuYuanTi-MaokenZhuyuanTi-2 SDF,MaoKenZhuYuanTi-MaokenZhuyuanTi-2 SDF,MaoKenZhuYuanTi-MaokenZhuyuanTi-2 SDF
+MenuMaterials,Material,,MaokenZhuMenu,MaokenZhuMenu,MaokenZhuMenu,MaokenZhuMenu
+ReturnMaterial,Material,,MaokenZhuReturn,MaokenZhuReturn,MaokenZhuReturn,MaokenZhuReturn
+TitleMaterial,Material,,MaokenZhuTitle,MaokenZhuTitle,MaokenZhuTitle,MaokenZhuTitle
+FoldUpMaterial,Material,,MaokenZhuFoldUp,MaokenZhuFoldUp,MaokenZhuFoldUp,MaokenZhuFoldUp
+LoginTips,Material,,MaokenZhuTips,MaokenZhuTips,MaokenZhuTips,MaokenZhuTips

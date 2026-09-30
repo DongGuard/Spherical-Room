@@ -1,0 +1,22 @@
+Key,Type,Desc,English,Chinese,ChineseTraditional,Japanese
+开始游戏,Text,,StartGame,开始游戏,開始遊戲,ゲームを始める
+读取存档,Text,,Load Save,继续游戏,繼續遊戲,ゲームを続ける
+设置,Text,,Settings,设置,設定,設定＃セッテイ＃
+退出,Text,,Exit,退出,退出,終了
+继续,Text,,Continue,继续,繼續,続行
+剧情完成,Text,,Plot Completed,剧情完成,劇情完成,ストーリー完成
+返回主菜单,Text,,Return Menu,返回主菜单,返回主菜單,メインメニューに戻る
+加入愿望单,Text,,Add to wish list,加入愿望单,加入願望單,願い事を入れる
+完结撒花,Text,,Finished Scattering Flowers,完结撒花,完結撒花,完結して花を撒く
+音乐音量,Text,,MusicVolume,音乐音量,音樂音量,音楽の音量
+音效音量,Text,,SoundVolume,音效音量,音效音量,サウンドボリューム
+全局音量,Text,,GlobalVolume,全局音量,全域音量,グローバルボリューム
+多语言,Text,,Multilingual,多语言,多語言,多言語
+保存,Text,,Save,保存,保存,保存＃ホゾン＃
+确认,Text,,Confirm,确认,確認,確認
+返回,Text,,Return,返回,返回,リターンマッチ
+收起,Text,,Fold Up,收起,收起,やめる
+英语,Text,,English,英语,英語,英語
+中文(简体),Text,,Chinese (Simplified),中文(简体),中文（簡體）,中国語（簡体字）
+中文(繁体),Text,,Chinese (Traditional,中文(繁体),中文（繁體）,中国語（繁体字）
+日语,Text,,Japanese,日语,日語,日本語

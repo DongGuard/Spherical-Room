@@ -1,0 +1,271 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f0b0c553be8edd4682e9180fdd13e37, type: 3}
+  m_Name: I2Languages
+  m_EditorClassIdentifier: 
+  mSource:
+    UserAgreesToHaveItOnTheScene: 0
+    UserAgreesToHaveItInsideThePluginsFolder: 0
+    GoogleLiveSyncIsUptoDate: 1
+    mTerms:
+    - Term: 1
+      TermType: 0
+      Description: 
+      Languages:
+      - "Hello, I\u2019m Corki."
+      - "\u4F60\u597D\uFF0C\u6211\u662F\u67EF\u5947\u3002"
+      - "\u4F60\u597D\uFF0C\u6211\u662F\u67EF\u5947\u3002"
+      - "\u3053\u3093\u306B\u3061\u306F\u3001\u79C1\u306F\u30B3\u30EB\u30AD\u3067\u3059\u3002"
+      Flags: 00000000
+      Languages_Touch: []
+    - Term: 2
+      TermType: 0
+      Description: 
+      Languages:
+      - Hi, Corki.
+      - "\u67EF\u5947\uFF0C\u4F60\u597D\u3002"
+      - "\u67EF\u5947\uFF0C\u4F60\u597D\u3002"
+      - "\u30B3\u30EB\u30AD\u3001\u3053\u3093\u306B\u3061\u306F\u3002"
+      Flags: 00000000
+      Languages_Touch: []
+    - Term: 3
+      TermType: 0
+      Description: 
+      Languages:
+      - He is the famous detective.
+      - "\u4ED6\u662F\u5927\u540D\u9F0E\u9F0E\u7684\u5927\u4FA6\u63A2"
+      - "\u4ED6\u662F\u5927\u540D\u9F0E\u9F0E\u7684\u5927\u5075\u63A2\u3002"
+      - "\u5F7C\u306F\u5927\u540D\u9F0E\u9F0E\u306E\u540D\u63A2\u5075\u3067\u3059\u3002"
+      Flags: 00000000
+      Languages_Touch: []
+    - Term: 4
+      TermType: 0
+      Description: 
+      Languages:
+      - Someone needs help. Let's go!
+      - "\u6709\u4EBA\u9700\u8981\u5E2E\u52A9\uFF0C\u5FEB\u53BB\u770B\u770B\u3002"
+      - "\u6709\u4EBA\u9700\u8981\u5E6B\u52A9\uFF0C\u5FEB\u53BB\u770B\u770B\u3002"
+      - "\u8AB0\u304B\u304C\u52A9\u3051\u3092\u5FC5\u8981\u3068\u3057\u3066\u3044\u308B\u3088\u3001\u65E9\u304F\u898B\u306B\u884C\u3053\u3046\uFF01"
+      Flags: 00000000
+      Languages_Touch: []
+    - Term: 5
+      TermType: 0
+      Description: 
+      Languages:
+      - What trouble has Paopao gotten into?
+      - "\u94F6\u6E10\u5C42\u70AE\u70AE\u9047\u5230\u4E86\u4EC0\u4E48\u70E6\u607C\uFF1F"
+      - "\u9280\u6F38\u5C64\u70AE\u70AE\u9047\u5230\u4E86\u4EC0\u9EBD\u7169\u60F1\uFF1F"
+      - "\u30B7\u30EB\u30D0\u30FC\u30B7\u30A7\u30FC\u30C9\u306E\u30D0\u30D6\u30EB\u306F\u4F55\u304B\u56F0\u3063\u3066\u3044\u308B\u306E\u304B\u306A\uFF1F"
+      Flags: 00000000
+      Languages_Touch: []
+    - Term: 6
+      TermType: 0
+      Description: 
+      Languages:
+      - 'PaoPao: My freeze-dried food is missing!'
+      - "\u70AE\u70AE\uFF1A\u6211\u7684\u51BB\u5E72\u4E0D\u89C1\u5566\u3002"
+      - "\u70AE\u70AE\uFF1A\u6211\u7684\u51CD\u4E7E\u4E0D\u898B\u5566\u3002"
+      - "\u30D1\u30AA\u30D1\u30AA\uFF1A\u79C1\u306E\u30D5\u30EA\u30FC\u30BA\u30C9\u30E9\u30A4\u304C\u306A\u304F\u306A\u3063\u3061\u3083\u3063\u305F\uFF01"
+      Flags: 00000000
+      Languages_Touch: []
+    - Term: 7
+      TermType: 0
+      Description: 
+      Languages:
+      - 'Corki: I have a plan!'
+      - "\u67EF\u5947\uFF1A\u6211\u6709\u529E\u6CD5\uFF01"
+      - "\u67EF\u5947\uFF1A\u6211\u6709\u8FA6\u6CD5\uFF01"
+      - "\u30B3\u30EB\u30AD\uFF1A\u79C1\u306B\u306F\u65B9\u6CD5\u304C\u3042\u308B\uFF01"
+      Flags: 00000000
+      Languages_Touch: []
+    - Term: 8
+      TermType: 0
+      Description: 
+      Languages:
+      - "So that\u2019s what happened!"
+      - "\u539F\u6765\u662F\u8FD9\u6837\uFF01"
+      - "\u539F\u4F86\u662F\u9019\u6A23\uFF01"
+      - "\u306A\u308B\u307B\u3069\u3001\u305D\u3046\u3044\u3046\u3053\u3068\u3060\u3063\u305F\u3093\u3060\uFF01"
+      Flags: 00000000
+      Languages_Touch: []
+    - Term: 9
+      TermType: 0
+      Description: 
+      Languages:
+      - PaoPao's owner has left.
+      - "\u70AE\u70AE\u4E3B\u4EBA\u51FA\u95E8\u4E86"
+      - "\u70AE\u70AE\u4E3B\u4EBA\u51FA\u9580\u4E86"
+      - "\u30D1\u30AA\u30D1\u30AA\u306E\u3054\u4E3B\u4EBA\u306F\u51FA\u304B\u3051\u307E\u3057\u305F\u3002"
+      Flags: 00000000
+      Languages_Touch: []
+    - Term: 10
+      TermType: 0
+      Description: 
+      Languages:
+      - PaoPao hid the freeze-dried food under the sofa.
+      - "\u70AE\u70AE\u628A\u51BB\u5E72\u85CF\u5230\u4E86\u6C99\u53D1\u4E0B"
+      - "\u70AE\u70AE\u628A\u51CD\u4E7E\u85CF\u5230\u4E86\u6C99\u767C\u4E0B"
+      - "\u30D1\u30AA\u30D1\u30AA\u306F\u30D5\u30EA\u30FC\u30BA\u30C9\u30E9\u30A4\u3092\u30BD\u30D5\u30A1\u306E\u4E0B\u306B\u96A0\u3057\u307E\u3057\u305F\u3002"
+      Flags: 00000000
+      Languages_Touch: []
+    - Term: 11
+      TermType: 0
+      Description: 
+      Languages:
+      - PaoPao is asleep.
+      - "\u70AE\u70AE\u7761\u7740\u4E86\u3002"
+      - "\u70AE\u70AE\u7761\u7740\u4E86\u3002"
+      - "\u30D1\u30AA\u30D1\u30AA\u306F\u5BDD\u3066\u3057\u307E\u3063\u305F\u3002"
+      Flags: 00000000
+      Languages_Touch: []
+    - Term: 12
+      TermType: 0
+      Description: 
+      Languages:
+      - The cleaning robot appeared.
+      - "\u626B\u5730\u673A\u5668\u4EBA\u51FA\u73B0\u4E86\u3002"
+      - "\u6383\u5730\u6A5F\u5668\u4EBA\u51FA\u73FE\u4E86\u3002"
+      - "\u6383\u9664\u30ED\u30DC\u30C3\u30C8\u304C\u73FE\u308C\u305F\u3002"
+      Flags: 00000000
+      Languages_Touch: []
+    - Term: 13
+      TermType: 0
+      Description: 
+      Languages:
+      - "There\u2019s no freeze-dried food thief at all!"
+      - "\u6839\u672C\u5C31\u6CA1\u6709\u51BB\u5E72\u5927\u76D7\uFF01"
+      - "\u6839\u672C\u5C31\u6C92\u6709\u51CD\u4E7E\u5927\u76DC\uFF01"
+      - "\u30D5\u30EA\u30FC\u30BA\u30C9\u30E9\u30A4\u6CE5\u68D2\u306A\u3093\u3066\u3044\u306A\u304B\u3063\u305F\u3093\u3060\uFF01"
+      Flags: 00000000
+      Languages_Touch: []
+    - Term: 14
+      TermType: 0
+      Description: 
+      Languages:
+      - It was the cleaning robot that mistook the freeze-dried food for trash and
+        cleaned it up!
+      - "\u662F\u626B\u5730\u673A\u5668\u4EBA\u628A\u51BB\u5E72\u5F53\u6210\u5783\u573E\u6E05\u7406\u4E86\uFF01"
+      - "\u662F\u6383\u5730\u6A5F\u5668\u4EBA\u628A\u51CD\u4E7E\u7576\u6210\u5783\u573E\u6E05\u7406\u4E86\uFF01"
+      - "\u6383\u9664\u30ED\u30DC\u30C3\u30C8\u304C\u30D5\u30EA\u30FC\u30BA\u30C9\u30E9\u30A4\u3092\u30B4\u30DF\u3068\u9593\u9055\u3048\u3066\u6383\u9664\u3057\u3066\u3057\u307E\u3063\u305F\uFF01"
+      Flags: 00000000
+      Languages_Touch: []
+    - Term: 15
+      TermType: 0
+      Description: 
+      Languages:
+      - "Corki, you\u2019re amazing!"
+      - "\u67EF\u5947\u4F60\u771F\u5389\u5BB3\u3002"
+      - "\u67EF\u5947\u4F60\u771F\u53B2\u5BB3\u3002"
+      - "\u30B3\u30EB\u30AD\u3001\u3059\u3054\u3044\uFF01"
+      Flags: 00000000
+      Languages_Touch: []
+    - Term: 16
+      TermType: 0
+      Description: 
+      Languages:
+      - Corki, you truly are a great detective!
+      - "\u67EF\u5947\u4F60\u4E0D\u6127\u662F\u5927\u4FA6\u63A2\u3002"
+      - "\u67EF\u5947\u4F60\u4E0D\u6127\u662F\u5927\u5075\u63A2\u3002"
+      - "\u30B3\u30EB\u30AD\u3001\u3055\u3059\u304C\u540D\u63A2\u5075\u3060\uFF01"
+      Flags: 00000000
+      Languages_Touch: []
+    - Term: 17
+      TermType: 0
+      Description: 
+      Languages:
+      - Thank you, Corki.
+      - "\u8C22\u8C22\u4F60\u67EF\u5947\u3002"
+      - "\u8B1D\u8B1D\u4F60\u67EF\u5947\u3002"
+      - "\u3042\u308A\u304C\u3068\u3046\u3001\u30B3\u30EB\u30AD\u3002"
+      Flags: 00000000
+      Languages_Touch: []
+    - Term: 18
+      TermType: 0
+      Description: 
+      Languages:
+      - Hello,Corki
+      - "\u4F60\u597D\uFF0C\u67EF\u5947"
+      - "\u4F60\u597D\uFF0C\u67EF\u5947"
+      - "\u3053\u3093\u306B\u3061\u306F\u3001\u30B3\u30EB\u30AD"
+      Flags: 00000000
+      Languages_Touch: []
+    - Term: 19
+      TermType: 0
+      Description: 
+      Languages:
+      - Paopao
+      - "\u70AE\u70AE"
+      - "\u70AE\u70AE"
+      - "\u30D1\u30AA\u30D1\u30AA"
+      Flags: 00000000
+      Languages_Touch: []
+    - Term: 20
+      TermType: 0
+      Description: 
+      Languages:
+      - Investigation
+      - "\u63A8\u7406"
+      - "\u63A8\u7406"
+      - "\u63A8\u7406"
+      Flags: 00000000
+      Languages_Touch: []
+    - Term: 21
+      TermType: 0
+      Description: 
+      Languages:
+      - Solve
+      - "\u7834\u6848"
+      - "\u7834\u6848"
+      - "\u89E3\u6C7A"
+      Flags: 00000000
+      Languages_Touch: []
+    CaseInsensitiveTerms: 0
+    OnMissingTranslation: 1
+    mTerm_AppName: 
+    mLanguages:
+    - Name: English
+      Code: en
+      Flags: 0
+    - Name: Chinese
+      Code: zh
+      Flags: 0
+    - Name: ChineseTraditional
+      Code: 
+      Flags: 0
+    - Name: Japanese
+      Code: ja
+      Flags: 0
+    IgnoreDeviceLanguage: 0
+    _AllowUnloadingLanguages: 0
+    Google_WebServiceURL: 
+    Google_SpreadsheetKey: 
+    Google_SpreadsheetName: 
+    Google_LastUpdatedVersion: 
+    Google_Password: change_this
+    GoogleUpdateFrequency: 3
+    GoogleInEditorCheckFrequency: 2
+    GoogleUpdateSynchronization: 1
+    GoogleUpdateDelay: 0
+    Assets:
+    - {fileID: 12800000, guid: ccdf0cc7991c18b4bb63ebf93912031a, type: 3}
+    - {fileID: 11400000, guid: dd7cf1c81794d204ebcb8c8e4af45d23, type: 2}
+    - {fileID: 2100000, guid: 8dd436d9c7301794a97a67a6f01a808e, type: 2}
+    - {fileID: 2100000, guid: 31bc3475b9779694aab73159276ce613, type: 2}
+    - {fileID: 2100000, guid: 535219e8783d2044f88da9a8830ab4d2, type: 2}
+    - {fileID: 2100000, guid: 9528afb1da84a3e44a1bdcabb1e0ad8e, type: 2}
+    - {fileID: 2100000, guid: 3ea49385848f9a6438c6439848e7c5b3, type: 2}
+    - {fileID: 2100000, guid: 7710183afb05b8141aad980ef74c4927, type: 2}
+    Spreadsheet_LocalFileName: Editor/I2Localization/Localization.csv
+    Spreadsheet_LocalCSVSeparator: ','
+    Spreadsheet_LocalCSVEncoding: utf-8
+    Spreadsheet_SpecializationAsRows: 1
+    Spreadsheet_SortRows: 1
