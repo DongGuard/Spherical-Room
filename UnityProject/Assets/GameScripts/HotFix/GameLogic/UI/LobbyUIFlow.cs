@@ -33,6 +33,7 @@ namespace GameLogic
         {
             GameModule.UI.CloseUI<RoomUI>();
             GameModule.UI.CloseUI<CreateRoom>();
+            GameModule.UI.CloseUI<JoinUI>();
             GameModule.UI.ShowUIAsync<MenuUI>();
         }
 
@@ -40,6 +41,7 @@ namespace GameLogic
         public void ShowRoom()
         {
             GameModule.UI.CloseUI<CreateRoom>();
+            GameModule.UI.CloseUI<JoinUI>();
             GameModule.UI.CloseUI<MenuUI>();
             GameModule.UI.ShowUI<RoomUI>();
         }

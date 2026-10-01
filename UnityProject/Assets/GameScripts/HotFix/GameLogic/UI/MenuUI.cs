@@ -26,6 +26,7 @@ namespace GameLogic
         }
         private void OnClickJoinBtn()
         {
+            GameModule.UI.ShowUI<JoinUI>();
         }
         #endregion
 
