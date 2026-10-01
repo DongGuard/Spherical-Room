@@ -13,30 +13,25 @@ namespace GameLogic
         public SteamCloudStorage SteamCloudStorage => SteamCloudStorage.Instance; //云存储
         public SteamAchievement SteamAchievement => SteamAchievement.Instance; //成就
         public SteamWishlist SteamWishlist => SteamWishlist.Instance; //愿望单
+        public SteamLobby SteamLobby => SteamLobby.Instance; //联机大厅（好友邀请 / P2P 联机）
 
         protected override void OnInit()
         {
             base.OnInit();
             if (!SteamManager.Initialized)
             {
-                // 初始化 Steam API
-                if (!SteamAPI.Init())
-                {
-                    Debug.LogError("Steam API Initialization failed.");
-                }
-                else
-                {
-                    Debug.LogWarning("Steam API Initialized.");
-                }
+                Debug.LogError("Steam API 未初始化，SteamModule 不可用");
+                GameEvent.Send(Constant.GameEvent.CloseLoading);
+                return;
             }
 
             SteamCloudStorage.Active();
             SteamAchievement.Active();
             SteamWishlist.Active();
+            SteamLobby.Active();
             Application.quitting += OnApplicationQuit;
-            // 获取玩家昵称
             string playerName = SteamFriends.GetPersonaName();
-            Debug.Log("Steam API Initialization failed! SteamSDK初始化成功！" + " " + "玩家昵称: " + playerName);
+            Debug.Log($"SteamSDK 初始化成功，玩家昵称: {playerName}");
             GameEvent.Send(Constant.GameEvent.CloseLoading);
         }
 

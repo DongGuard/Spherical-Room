@@ -79,7 +79,7 @@ public class GameModule
     private static ITimerModule _timer;
 
     
-#if UNITY_EDITOR
+#if UNITY_STANDALONE_WIN
     /// <summary>
     /// 获取Steam模块。
     /// </summary>

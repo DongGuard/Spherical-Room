@@ -21,6 +21,7 @@ public partial class GameApp
     {
         GameEventHelper.Init();
         _hotfixAssembly = (List<Assembly>)objects[0];
+        MirrorHotfixInitializer.Initialize(_hotfixAssembly);
         Log.Warning("======= 看到此条日志代表你成功运行了热更新代码 =======");
         Log.Warning("======= Entrance GameApp =======");
         Utility.Unity.AddDestroyListener(Release);
@@ -31,10 +32,19 @@ public partial class GameApp
     {
         GameEvent.Get<ILoginUI>().ShowLoginUI();
         GameModule.UI.Active();
-#if UNITY_EDITOR
-        GameModule.SteamModule.Active(); // 只在编辑器下执行
-#elif UNITY_STANDALONE_WIN
-        GameModule.PCDebugModule.Active();
+#if UNITY_STANDALONE_WIN
+        if (SteamManager.Initialized)
+        {
+            GameModule.SteamModule.Active(); 
+        }
+        else
+        {
+            Log.Warning("Steam 未启动或初始化失败，使用本地模式");
+            GameModule.PCDebugModule.Active();
+            GameEvent.Send(Constant.GameEvent.CloseLoading);
+        }
+#else
+        GameEvent.Send(Constant.GameEvent.CloseLoading);
 #endif
     }
 
