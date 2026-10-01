@@ -135,11 +135,7 @@ namespace GameLogic
         public int YourSlot;
     }
 
-    /// <summary>
-    /// 主机 → 客户端：共享球的当前速度。玩家对象生成后补发一次，
-    /// 因为生成初始状态和 NetworkTransform 同步都只覆盖位置/旋转，不覆盖速度
-    /// （中途加入的玩家由此拿到完整的球体运动状态）。
-    /// </summary>
+    /// <summary>主机 → 客户端：共享球的当前速度，玩家对象生成后补发一次。</summary>
     public struct BallVelocityMessage : NetworkMessage
     {
         /// <summary>球的 NetworkIdentity netId，客户端据此定位刚体。</summary>

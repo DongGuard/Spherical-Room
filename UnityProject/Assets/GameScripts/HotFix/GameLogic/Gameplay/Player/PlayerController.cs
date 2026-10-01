@@ -1,5 +1,8 @@
+using Cysharp.Threading.Tasks;
 using Mirror;
+using TMPro;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace GameLogic
 {
@@ -30,6 +33,11 @@ namespace GameLogic
         [Header("Push")]
         [Tooltip("推球加速度，越大起步越快")]
         [SerializeField] private float pushAccel = 12f;
+
+        private const float TapNotifyCooldown = 0.5f;
+        private const int TappedShowMs = 1000;
+        private float _lastTapTime;
+        private TMP_Text _tappedText;
 
         private CharacterController _controller;
         private PlayerAnimationController _animation;
@@ -114,6 +122,12 @@ namespace GameLogic
             if (InputManager.IsValid)
             {
                 InputManager.Instance.SetGameplayEnabled(false);
+            }
+
+            if (_tappedText != null)
+            {
+                Object.Destroy(_tappedText.gameObject);
+                _tappedText = null;
             }
         }
 
@@ -228,12 +242,7 @@ namespace GameLogic
             }
         }
 
-        /// <summary>
-        /// 推动共享球体：CharacterController 是运动学控制器，移动时不会对动态刚体施加力，
-        /// 需要在碰撞回调里手动加力。回调只在移动 CharacterController 的一端触发，
-        /// 而玩家移动只在服务器模拟（含 Host），所以推力天然全部施加在服务端：
-        /// 多名玩家同一物理帧推球时，力叠加在同一个 PhysX 世界里，球只有一个权威状态。
-        /// </summary>
+        /// <summary>推动共享球体：CharacterController 移动不会对刚体施力，需在碰撞回调里手动加力。</summary>
         private void OnControllerColliderHit(ControllerColliderHit hit)
         {
             if (!isServer)
@@ -247,14 +256,18 @@ namespace GameLogic
                 return;
             }
 
+            if (Time.unscaledTime - _lastTapTime >= TapNotifyCooldown)
+            {
+                _lastTapTime = Time.unscaledTime;
+                RpcTapped(connectionToClient);
+            }
+
             // 站到球上时不把球踩走
             if (hit.moveDirection.y < -0.3f)
             {
                 return;
             }
 
-            // 速度趋近式推力：把球的水平速度推向玩家当前速度（走路推慢球、疾跑推快球），
-            // 球比玩家快时不拽回，滚远后追上再推
             Vector3 playerVelocity = new Vector3(_planarVelocity.x, 0f, _planarVelocity.z);
             Vector3 delta = playerVelocity - new Vector3(body.linearVelocity.x, 0f, body.linearVelocity.z);
             if (Vector3.Dot(delta, playerVelocity) <= 0f)
@@ -263,6 +276,71 @@ namespace GameLogic
             }
 
             body.AddForce(delta * (pushAccel * body.mass));
+        }
+
+        #endregion
+
+        #region 碰触提示
+
+        /// <summary>服务端：碰到共享球的玩家专属通知，只发给触碰者自己的客户端。</summary>
+        [TargetRpc]
+        private void RpcTapped(NetworkConnectionToClient target)
+        {
+            ShowTapped();
+        }
+
+        /// <summary>在屏幕上方短暂显示 "Tapped"。提示文本运行时创建，挂在 UIRoot 下。</summary>
+        private void ShowTapped()
+        {
+            if (_tappedText == null)
+            {
+                CreateTappedTip();
+            }
+
+            if (_tappedText == null)
+            {
+                return;
+            }
+
+            _tappedText.gameObject.SetActive(true);
+            HideTappedLaterAsync().Forget();
+        }
+
+        private async UniTaskVoid HideTappedLaterAsync()
+        {
+            await UniTask.Delay(TappedShowMs, true);
+            if (_tappedText != null)
+            {
+                _tappedText.gameObject.SetActive(false);
+            }
+        }
+
+        private void CreateTappedTip()
+        {
+            Transform root = UIModule.UIRoot;
+            if (root == null)
+            {
+                Debug.LogWarning("[Player] UIRoot 不存在，无法显示碰触提示");
+                return;
+            }
+
+            GameObject go = new GameObject("TappedTip", typeof(RectTransform));
+            TextMeshProUGUI text = go.AddComponent<TextMeshProUGUI>();
+            text.text = "Tapped";
+            text.fontSize = 64;
+            text.alignment = TextAlignmentOptions.Center;
+            text.color = Color.white;
+            text.raycastTarget = false;
+
+            RectTransform rect = (RectTransform)go.transform;
+            rect.SetParent(root, false);
+            rect.anchorMin = new Vector2(0.5f, 1f);
+            rect.anchorMax = new Vector2(0.5f, 1f);
+            rect.pivot = new Vector2(0.5f, 1f);
+            rect.anchoredPosition = new Vector2(0f, -150f);
+            rect.sizeDelta = new Vector2(400f, 100f);
+            go.SetActive(false);
+            _tappedText = text;
         }
 
         #endregion

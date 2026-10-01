@@ -181,7 +181,6 @@ namespace GameLogic
 
                 if (occupied && slot.NameText != null)
                 {
-                    // 房主固定显示"房主"，成员显示昵称
                     slot.NameText.text = member.IsHost ? "房主" : member.Name;
                 }
             }

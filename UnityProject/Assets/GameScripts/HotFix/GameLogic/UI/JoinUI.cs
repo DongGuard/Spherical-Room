@@ -199,7 +199,6 @@ namespace GameLogic
                 }
             }
 
-            // 没有可加入的房间时隐藏"加入房间"按钮
             _btnCreate.gameObject.SetActive(_items.Count > 0);
             if (_items.Count == 0)
             {
@@ -211,7 +210,6 @@ namespace GameLogic
         {
             bool roomChanged = _selectedEntry == null || _selectedEntry.RoomId != item.Entry.RoomId;
 
-            // 恢复上一个选中项的颜色，再高亮新选中项
             if (_selectedBackground != null)
             {
                 _selectedBackground.color = _selectedNormalColor;
@@ -226,7 +224,6 @@ namespace GameLogic
                 item.Background.color = SelectedColor;
             }
 
-            // 切换到不同房间时收起密码面板，避免残留上一个房间的输入；
             // 列表刷新对同一房间的选中恢复不算切换，不打断正在等待的密码输入
             if (roomChanged && !preservePendingPassword)
             {
@@ -258,7 +255,6 @@ namespace GameLogic
                 return;
             }
 
-            // 满员 / 不允许中途加入 / 版本不一致在本地就能给出提示（最终仍以主机认证为准）
             if (!_selectedEntry.CanJoin(out string reason))
             {
                 ShowTip(reason);
@@ -293,7 +289,6 @@ namespace GameLogic
 
             if (!result.IsCancelled)
             {
-                // 密码错误、主机拒绝（刚好满员 / 房间不允许中途加入）等，界面保持打开便于重试
                 ShowTip(result.Message);
             }
         }

@@ -39,6 +39,14 @@ namespace GameLogic
 
         private const float LanSearchDuration = 2f;
 
+        /// <summary>定时生成：游戏中主机每隔该时间（秒）随机生成一个球。</summary>
+        private const float BallSpawnInterval = 15f;
+
+        private const float RandomBallRadius = 6f;
+
+        /// <summary>定时生成的球相对出生点的高度（米），从空中落入房间。</summary>
+        private const float RandomBallDropHeight = 3f;
+
         /// <summary>认证通过后等待房间状态的最长时间（秒）。</summary>
         private const float RoomStateTimeout = 10f;
 
@@ -82,7 +90,11 @@ namespace GameLogic
         private RoomPhase _serverPhase;
         private readonly List<ServerMember> _members = new List<ServerMember>();
         private readonly List<Transform> _spawnPoints = new List<Transform>();
-        private GameObject _ball;
+        /// <summary>房主生成的共享球（开局一个 + 定时生成的随机球）。</summary>
+        private readonly List<GameObject> _balls = new List<GameObject>();
+
+        /// <summary>下次定时生成球的时间（unscaled）。</summary>
+        private float _nextBallSpawnTime;
 
         // 房间列表
         private readonly List<RoomListEntry> _steamEntries = new List<RoomListEntry>();
@@ -201,6 +213,34 @@ namespace GameLogic
             {
                 LeaveRequested?.Invoke();
             }
+
+            UpdateBallSpawnTimer();
+        }
+
+        /// <summary>定时生成：由主机控制，游戏中每 15 秒在房间内随机位置生成一个球。</summary>
+        private void UpdateBallSpawnTimer()
+        {
+            if (!IsHost || !_inGame || _serverPhase != RoomPhase.Playing)
+            {
+                return;
+            }
+
+            if (Time.unscaledTime < _nextBallSpawnTime)
+            {
+                return;
+            }
+
+            _nextBallSpawnTime = Time.unscaledTime + BallSpawnInterval;
+            SpawnBallAt(RandomBallPosition());
+        }
+
+        private Vector3 RandomBallPosition()
+        {
+            Vector3 center = _spawnPoints.Count > 0
+                ? _spawnPoints[UnityEngine.Random.Range(0, _spawnPoints.Count)].position
+                : DefaultSpawnCenter;
+            Vector2 offset = UnityEngine.Random.insideUnitCircle * RandomBallRadius;
+            return new Vector3(center.x + offset.x, center.y + RandomBallDropHeight, center.z + offset.y);
         }
 
         protected override void OnRelease()
@@ -332,7 +372,8 @@ namespace GameLogic
             _serverPhase = RoomPhase.Waiting;
             _members.Clear();
             _spawnPoints.Clear();
-            _ball = null;
+            _balls.Clear();
+            _nextBallSpawnTime = 0f;
             _room = null;
             _loadingGame = false;
             _inGame = false;
@@ -762,6 +803,7 @@ namespace GameLogic
             // 场景里如果放了带 NetworkIdentity 的物体，在这里统一生成
             NetworkServer.SpawnObjects();
             SpawnBall();
+            _nextBallSpawnTime = Time.unscaledTime + BallSpawnInterval;
 
             // 成员收到 Playing 后各自加载场景，再 Ready + AddPlayer
             _serverPhase = RoomPhase.Playing;
@@ -804,7 +846,8 @@ namespace GameLogic
             _serverPhase = RoomPhase.None;
             _members.Clear();
             _spawnPoints.Clear();
-            _ball = null;
+            _balls.Clear();
+            _nextBallSpawnTime = 0f;
             _room = null;
             _loadingGame = false;
             _inGame = false;
@@ -848,35 +891,39 @@ namespace GameLogic
             }
         }
 
-        /// <summary>
-        /// 服务端：玩家对象生成后补发共享球的当前速度（生成初始状态只带位置/旋转），
-        /// 让中途加入的玩家拿到完整的球体运动状态。Host 本地连接自己就有权威状态，不用发。
-        /// </summary>
+        /// <summary>服务端：玩家对象生成后补发所有共享球的当前速度，供中途加入同步；Host 本地连接不用发。</summary>
         private void OnServerPlayerSpawned(NetworkConnectionToClient conn)
         {
-            if (_ball == null || conn is LocalConnectionToClient)
+            if (conn is LocalConnectionToClient)
             {
                 return;
             }
 
-            Rigidbody body = _ball.GetComponent<Rigidbody>();
-            if (body == null)
+            for (int i = 0; i < _balls.Count; i++)
             {
-                return;
-            }
+                GameObject ball = _balls[i];
+                if (ball == null)
+                {
+                    continue;
+                }
 
-            conn.Send(new BallVelocityMessage
-            {
-                BallNetId = _ball.GetComponent<NetworkIdentity>().netId,
-                Velocity = body.linearVelocity,
-                AngularVelocity = body.angularVelocity
-            });
+                Rigidbody body = ball.GetComponent<Rigidbody>();
+                if (body == null)
+                {
+                    continue;
+                }
+
+                conn.Send(new BallVelocityMessage
+                {
+                    BallNetId = ball.GetComponent<NetworkIdentity>().netId,
+                    Velocity = body.linearVelocity,
+                    AngularVelocity = body.angularVelocity
+                });
+            }
         }
 
         private void OnBallVelocityMessage(BallVelocityMessage msg)
         {
-            // 主机权威：速度和位置一样只读。客户端球是 kinematic，速度写入刚体仅作为状态记录，
-            // 视觉运动由 NetworkTransform 的快照插值驱动
             if (!NetworkClient.spawned.TryGetValue(msg.BallNetId, out NetworkIdentity identity))
             {
                 return;
@@ -961,15 +1008,25 @@ namespace GameLogic
 
         private void SpawnBall()
         {
-            if (_ballPrefab == null || _ball != null)
+            if (_ballPrefab == null)
             {
                 return;
             }
 
-            // 使用预制体里的位置
-            _ball = UnityEngine.Object.Instantiate(_ballPrefab);
-            _ball.name = _ballPrefab.name;
-            NetworkServer.Spawn(_ball);
+            SpawnBallAt(_ballPrefab.transform.position);
+        }
+
+        private void SpawnBallAt(Vector3 position)
+        {
+            if (_ballPrefab == null)
+            {
+                return;
+            }
+
+            GameObject ball = UnityEngine.Object.Instantiate(_ballPrefab, position, _ballPrefab.transform.rotation);
+            ball.name = _ballPrefab.name;
+            NetworkServer.Spawn(ball);
+            _balls.Add(ball);
         }
 
         private void CollectSpawnPoints()
