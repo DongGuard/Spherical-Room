@@ -231,9 +231,17 @@ namespace GameLogic
                 return;
             }
 
-            if (SteamManager.Initialized)
+            try
             {
-                SteamMatchmaking.LeaveLobby(CurrentLobby);
+                if (SteamManager.Initialized)
+                {
+                    SteamMatchmaking.LeaveLobby(CurrentLobby);
+                }
+            }
+            catch (Exception e)
+            {
+                // Steam 未初始化/已失效时也不能打断房间关闭流程
+                Debug.LogWarning($"[SteamLobby] 离开大厅失败: {e.Message}");
             }
 
             Debug.Log($"[SteamLobby] 离开大厅 {CurrentLobby}");
@@ -261,6 +269,18 @@ namespace GameLogic
                 return;
             }
 
+            try
+            {
+                PublishRoomInternal(roomId, room, joinable);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[SteamLobby] 发布房间数据失败: {e.Message}");
+            }
+        }
+
+        private void PublishRoomInternal(string roomId, RoomInfo room, bool joinable)
+        {
             SetData(KeyRoomId, roomId ?? string.Empty);
             SetData(KeyName, room.Name ?? string.Empty);
             SetData(KeyPassword, room.HasPassword ? "1" : "0");

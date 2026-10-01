@@ -1,3 +1,4 @@
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 using TEngine;
@@ -16,6 +17,10 @@ namespace GameLogic
             _btnJoin = FindChildComponent<Button>("m_btnJoin");
             _btnCreate.onClick.AddListener(OnClickCreateBtn);
             _btnJoin.onClick.AddListener(OnClickJoinBtn);
+        }
+
+        protected override void OnCreate()
+        {
         }
         #endregion
 

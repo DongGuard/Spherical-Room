@@ -99,6 +99,12 @@ namespace GameLogic
         /// <summary>开始搜索，持续 <paramref name="duration"/> 秒，结果通过 <see cref="ResultsChanged"/> 通知。</summary>
         public void StartSearch(float duration)
         {
+            if (_client != null)
+            {
+                _searchEnd = Time.unscaledTime + duration;
+                return;
+            }
+
             CloseClient();
             _results.Clear();
             try

@@ -37,7 +37,8 @@ namespace GameLogic
         /// <summary>场景里名字以此开头的物体作为出生点（按名字排序，依次分配给各位置）。</summary>
         private const string SpawnPointPrefix = "SpawnPoint";
 
-        private const float LanSearchDuration = 2f;
+        /// <summary>局域网搜索窗口（秒）。窗口需大于大厅列表的刷新间隔，刷新时只延长不清空。</summary>
+        private const float LanSearchDuration = 5f;
 
         /// <summary>定时生成：游戏中主机每隔该时间（秒）随机生成一个球。</summary>
         private const float BallSpawnInterval = 15f;
@@ -809,6 +810,12 @@ namespace GameLogic
             _serverPhase = RoomPhase.Playing;
             PublishRoomState();
             RequestLocalPlayer();
+            await WaitLocalPlayerReadyAsync();
+            if (serial != _roomSerial || !_session.IsHost)
+            {
+                return RoomOpResult.Fail("房间已关闭");
+            }
+
             _inGame = true;
             Log.Info($"[Room] 游戏开始，当前 {_members.Count} 人");
             GameEntered?.Invoke();
@@ -820,6 +827,7 @@ namespace GameLogic
         {
             if (!IsInRoom && !_loadingGame && !_inGame && _session.State == SessionState.Offline)
             {
+                Log.Warning($"[Room] LeaveRoom 被忽略：不在房间中（inRoom={IsInRoom} inGame={_inGame} state={_session.State}）");
                 return;
             }
 
@@ -839,7 +847,14 @@ namespace GameLogic
 
             _lan.StopAdvertising();
 #if UNITY_STANDALONE_WIN
-            SteamLobby.Instance.LeaveLobby();
+            try
+            {
+                SteamLobby.Instance.LeaveLobby();
+            }
+            catch (Exception e)
+            {
+                Log.Warning($"[Room] 离开 Steam 大厅异常: {e.Message}");
+            }
 #endif
             _settings = null;
             _roomId = null;
@@ -961,9 +976,28 @@ namespace GameLogic
             }
 
             RequestLocalPlayer();
+            await WaitLocalPlayerReadyAsync();
+            if (serial != _roomSerial || !_session.IsClient)
+            {
+                return;
+            }
+
             _inGame = true;
             Log.Info("[Room] 已进入游戏");
             GameEntered?.Invoke();
+        }
+
+        /// <summary>等待本地玩家生成到位并稍作稳定，再通知进入游戏关闭房间 UI，避免视觉穿帮。</summary>
+        private static async UniTask WaitLocalPlayerReadyAsync()
+        {
+            // 客户端要等服务器生成玩家并同步回来；超时兜底，期间断线由外层的序号检查处理
+            float deadline = Time.unscaledTime + 10f;
+            while (NetworkClient.active && NetworkClient.localPlayer == null && Time.unscaledTime < deadline)
+            {
+                await UniTask.Yield();
+            }
+
+            await UniTask.Delay(300, true);
         }
 
         private static async UniTask<bool> LoadGameSceneAsync()

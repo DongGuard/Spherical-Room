@@ -66,6 +66,10 @@ namespace GameLogic
         private TMP_Text _textTip;
         private float _tipHideAt;
 
+        /// <summary>大厅打开期间的列表刷新间隔（秒），让后创建的房间也能被发现。</summary>
+        private const float ListRefreshInterval = 3f;
+        private float _nextListRefresh;
+
         protected override void OnCreate()
         {
             _btnCreate.onClick.AddListener(OnClickCreateBtn);
@@ -82,6 +86,7 @@ namespace GameLogic
             CreateTip();
 
             LoadTemplateAsync().Forget();
+            _nextListRefresh = Time.unscaledTime + ListRefreshInterval;
             RoomManager.Instance.RefreshRoomList();
         }
 
@@ -96,6 +101,13 @@ namespace GameLogic
             if (_textTip != null && _textTip.gameObject.activeSelf && Time.unscaledTime >= _tipHideAt)
             {
                 _textTip.gameObject.SetActive(false);
+            }
+
+            // 周期刷新：先开大厅、后建的房间也要能出现在列表里
+            if (!_joining && Time.unscaledTime >= _nextListRefresh)
+            {
+                _nextListRefresh = Time.unscaledTime + ListRefreshInterval;
+                RoomManager.Instance.RefreshRoomList();
             }
         }
 

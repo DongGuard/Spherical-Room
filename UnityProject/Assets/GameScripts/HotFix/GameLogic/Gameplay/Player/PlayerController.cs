@@ -8,9 +8,6 @@ namespace GameLogic
 {
     /// <summary>
     /// 第一人称玩家控制（主机权威，Mirror）。
-    /// <para>本地玩家：从 InputManager 取输入、从 CameraManager 取视角朝向，每个物理步通过 Command 发给主机。</para>
-    /// <para>Server：用最新输入驱动 CharacterController 移动，位置和朝向由 NetworkTransform（ServerToClient）下发。</para>
-    /// 客户端从不自行修改位置，所以各端看到的玩家位置只有主机这一个数据源。
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
     [DisallowMultipleComponent]
@@ -33,11 +30,14 @@ namespace GameLogic
         [Header("Push")]
         [Tooltip("推球加速度，越大起步越快")]
         [SerializeField] private float pushAccel = 12f;
+        [Tooltip("推球速度倍率：球被推向玩家速度的该倍数，>1 时球比人跑得快")]
+        [SerializeField] private float pushSpeedBoost = 1.4f;
 
         private const float TapNotifyCooldown = 0.5f;
         private const int TappedShowMs = 1000;
         private float _lastTapTime;
         private TMP_Text _tappedText;
+
 
         private CharacterController _controller;
         private PlayerAnimationController _animation;
@@ -91,7 +91,6 @@ namespace GameLogic
 
         public override void OnStartClient()
         {
-            // 纯客户端不做模拟，位置完全来自 NetworkTransform，关闭 CharacterController 避免与插值冲突
             if (!isServer)
             {
                 _controller.enabled = false;
@@ -154,7 +153,6 @@ namespace GameLogic
                 Sequence = ++_sequence,
                 Move = input.Move,
                 Sprint = input.Sprint,
-                // 移动朝向以本地相机为准，转视角不等主机回传
                 Yaw = CameraManager.Instance.IsAttached ? CameraManager.Instance.Yaw : transform.eulerAngles.y
             };
             bool jump = input.ConsumeJump();
@@ -262,14 +260,14 @@ namespace GameLogic
                 RpcTapped(connectionToClient);
             }
 
-            // 站到球上时不把球踩走
             if (hit.moveDirection.y < -0.3f)
             {
                 return;
             }
 
             Vector3 playerVelocity = new Vector3(_planarVelocity.x, 0f, _planarVelocity.z);
-            Vector3 delta = playerVelocity - new Vector3(body.linearVelocity.x, 0f, body.linearVelocity.z);
+            Vector3 targetVelocity = playerVelocity * pushSpeedBoost;
+            Vector3 delta = targetVelocity - new Vector3(body.linearVelocity.x, 0f, body.linearVelocity.z);
             if (Vector3.Dot(delta, playerVelocity) <= 0f)
             {
                 return;
@@ -317,6 +315,7 @@ namespace GameLogic
 
         private void CreateTappedTip()
         {
+         
             Transform root = UIModule.UIRoot;
             if (root == null)
             {

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace GameLogic
 {
@@ -80,7 +81,11 @@ namespace GameLogic
             }
             else if (Cursor.lockState != CursorLockMode.Locked && Input.GetMouseButtonDown(0))
             {
-                SetCursorLocked(true);
+                bool overUi = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+                if (!overUi)
+                {
+                    SetCursorLocked(true);
+                }
             }
         }
 
