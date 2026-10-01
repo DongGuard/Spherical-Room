@@ -27,6 +27,10 @@ namespace GameLogic
         [Tooltip("本机玩家需要隐藏的模型根节点")]
         [SerializeField] private GameObject modelRoot;
 
+        [Header("Push")]
+        [Tooltip("推球加速度，越大起步越快")]
+        [SerializeField] private float pushAccel = 12f;
+
         private CharacterController _controller;
         private PlayerAnimationController _animation;
         private uint _sequence;
@@ -54,7 +58,6 @@ namespace GameLogic
                 eyeCamera = GetComponentInChildren<Camera>(true);
             }
 
-            // 所有实例先关闭眼睛相机和 AudioListener，本地玩家在 OnStartLocalPlayer 中由 CameraManager 启用
             SetEyeEnabled(false);
         }
 
@@ -223,6 +226,43 @@ namespace GameLogic
                 // 服务端位置只在物理步更新，直接把实际速度（撞墙时为 0）交给动画，不让动画按渲染帧差分估算
                 _animation.ReportSimulatedVelocity(_controller.velocity);
             }
+        }
+
+        /// <summary>
+        /// 推动共享球体：CharacterController 是运动学控制器，移动时不会对动态刚体施加力，
+        /// 需要在碰撞回调里手动加力。回调只在移动 CharacterController 的一端触发，
+        /// 而玩家移动只在服务器模拟（含 Host），所以推力天然全部施加在服务端：
+        /// 多名玩家同一物理帧推球时，力叠加在同一个 PhysX 世界里，球只有一个权威状态。
+        /// </summary>
+        private void OnControllerColliderHit(ControllerColliderHit hit)
+        {
+            if (!isServer)
+            {
+                return;
+            }
+
+            Rigidbody body = hit.collider.attachedRigidbody;
+            if (body == null || body.isKinematic)
+            {
+                return;
+            }
+
+            // 站到球上时不把球踩走
+            if (hit.moveDirection.y < -0.3f)
+            {
+                return;
+            }
+
+            // 速度趋近式推力：把球的水平速度推向玩家当前速度（走路推慢球、疾跑推快球），
+            // 球比玩家快时不拽回，滚远后追上再推
+            Vector3 playerVelocity = new Vector3(_planarVelocity.x, 0f, _planarVelocity.z);
+            Vector3 delta = playerVelocity - new Vector3(body.linearVelocity.x, 0f, body.linearVelocity.z);
+            if (Vector3.Dot(delta, playerVelocity) <= 0f)
+            {
+                return;
+            }
+
+            body.AddForce(delta * (pushAccel * body.mass));
         }
 
         #endregion

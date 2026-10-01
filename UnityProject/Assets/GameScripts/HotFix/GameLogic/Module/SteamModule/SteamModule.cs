@@ -13,7 +13,7 @@ namespace GameLogic
         public SteamCloudStorage SteamCloudStorage => SteamCloudStorage.Instance; //云存储
         public SteamAchievement SteamAchievement => SteamAchievement.Instance; //成就
         public SteamWishlist SteamWishlist => SteamWishlist.Instance; //愿望单
-        public SteamLobby SteamLobby => SteamLobby.Instance; //联机大厅（好友邀请 / P2P 联机）
+        public SteamLobby SteamLobby => SteamLobby.Instance; //联机大厅（公开房间 / 好友邀请，由 RoomManager 使用）
 
         protected override void OnInit()
         {
@@ -32,6 +32,7 @@ namespace GameLogic
             Application.quitting += OnApplicationQuit;
             string playerName = SteamFriends.GetPersonaName();
             Debug.Log($"SteamSDK 初始化成功，玩家昵称: {playerName}");
+            // 主菜单由 GameApp 统一打开（Steam 不可用时也要能进菜单）
             GameEvent.Send(Constant.GameEvent.CloseLoading);
         }
 

@@ -30,7 +30,7 @@ public partial class GameApp
 
     private static void StartGameLogic()
     {
-        GameEvent.Get<ILoginUI>().ShowLoginUI();
+        LobbyUIFlow.Instance.ShowMenu();
         GameModule.UI.Active();
 #if UNITY_STANDALONE_WIN
         if (SteamManager.Initialized)

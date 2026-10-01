@@ -83,3 +83,6 @@ MonoBehaviour:
   - uiElementRegex: mtmp_text
     componentName: TMP_Text
     isUIWidget: 0
+  - uiElementRegex: mtmp_InputField
+    componentName: TMP_InputField
+    isUIWidget: 0
