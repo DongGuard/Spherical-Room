@@ -594,6 +594,15 @@ namespace GameLogic
             }
 
             bool joining = State == SessionState.Starting;
+
+            // 断开的第一时间（Mirror 尚未销毁网络对象）弹出即时提示罩住画面，
+            // 否则对象销毁+相机交还的突变会抢在提示淡入之前穿帮
+            if (!joining)
+            {
+                Log.Warning($"[Session][诊断] OnClientDisconnected 帧={Time.frameCount}");
+                RoomManager.Instance.NotifyDisconnectTip();
+            }
+
             string reason = BuildDisconnectReason(joining);
             SetState(SessionState.Offline);
             _serverMembers.Clear();

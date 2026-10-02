@@ -46,9 +46,19 @@
         /// <param name="asset">要卸载的资源。</param>
         public void UnloadAsset(object asset)
         {
-            if (_assetPool != null)
+            if (asset == null || _assetPool == null)
+            {
+                return;
+            }
+
+            // 界面在切场景时可能已经回收过。对象池里找不到时不要抛异常，否则解散房间会弹出客户端报错。
+            try
             {
                 _assetPool.Unspawn(asset);
+            }
+            catch (GameFrameworkException exception)
+            {
+                Log.Warning($"UnloadAsset skipped: {exception.Message}");
             }
         }
         

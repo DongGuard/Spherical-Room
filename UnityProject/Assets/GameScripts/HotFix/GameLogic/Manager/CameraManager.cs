@@ -105,6 +105,7 @@ namespace GameLogic
 
             _eyeOriginalCullingMask = _camera.cullingMask;
             HideFromEye(modelRoot);
+            CenterEyeOnCapsuleAxis();
             return true;
         }
 
@@ -113,6 +114,11 @@ namespace GameLogic
         /// </summary>
         public void Detach()
         {
+            if (_camera != null)
+            {
+                Debug.Log("[CameraManager][诊断] Detach（相机交还场景）", _camera);
+            }
+
             RestoreModelLayers();
 
             if (_camera != null)
@@ -144,6 +150,9 @@ namespace GameLogic
             _sceneListener = null;
         }
 
+        // 相机守卫缓冲（GetCameras 无分配）
+        private readonly Camera[] _allCamerasBuffer = new Camera[8];
+
         private void LateUpdate()
         {
             if (_camera == null)
@@ -151,11 +160,67 @@ namespace GameLogic
                 return;
             }
 
+            SuppressSceneCameras();
+
             // LateUpdate 在所有 Update 之后，InputManager 本帧的鼠标位移已经就绪
             Vector2 look = InputManager.Instance.LookDelta * MouseSensitivity;
             Yaw = Mathf.Repeat(Yaw + look.x, 360f);
             Pitch = Mathf.Clamp(Pitch - look.y, MinPitch, MaxPitch);
             ApplyRotation();
+        }
+
+        /// <summary>
+        /// 第一人称期间压制场景相机：场景切换后激活的主相机（如中途加入时 Room 的 Main Camera）
+        /// 可能晚于 Attach 出现，Attach 时的一次性 Camera.main 查找关不到它，这里每帧兜底关闭。
+        /// 只关渲染 Default 层的相机（UI 相机等专用相机不动）。
+        /// </summary>
+        /// <summary>
+        /// 把眼相机收回胶囊中心轴（保留高度）：眼相机常挂在模型脸部的位置（胶囊表面前方），
+        /// 贴球/贴墙时碰撞面会插入相机近裁剪面导致闪屏；中心线上距任何碰撞面至少一个胶囊半径。
+        /// </summary>
+        private void CenterEyeOnCapsuleAxis()
+        {
+            CharacterController controller = _camera.GetComponentInParent<CharacterController>();
+            if (controller == null)
+            {
+                return;
+            }
+
+            Transform eye = _camera.transform;
+            Vector3 world = eye.position;
+            Vector3 center = controller.transform.position + controller.center;
+            eye.position = new Vector3(center.x, world.y, center.z);
+        }
+
+        private void SuppressSceneCameras()
+        {
+            int count = Camera.GetAllCameras(_allCamerasBuffer);
+            for (int i = 0; i < count; i++)
+            {
+                Camera cam = _allCamerasBuffer[i];
+                if (cam == _camera || !cam.enabled)
+                {
+                    continue;
+                }
+
+                // 不渲染 Default 层的是专用相机（UI、特效），不处理
+                if ((cam.cullingMask & (1 << 0)) == 0)
+                {
+                    continue;
+                }
+
+                if (cam != _sceneCamera)
+                {
+                    _sceneCamera = cam;
+                    _sceneListener = cam.GetComponent<AudioListener>();
+                }
+
+                cam.enabled = false;
+                if (_sceneListener != null && _sceneListener.enabled)
+                {
+                    _sceneListener.enabled = false;
+                }
+            }
         }
 
         private void ApplyRotation()

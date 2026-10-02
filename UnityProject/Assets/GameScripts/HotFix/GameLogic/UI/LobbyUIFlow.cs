@@ -130,12 +130,21 @@ namespace GameLogic
             _returning = true;
             Log.Info("[LobbyUI] 开始返回主菜单");
 
+            // 先关掉局内界面再切场景。场景卸载会回收资源，若 GameUI 还占着预制体，销毁时会再卸载一次并报错。
+            GameModule.UI.CloseUI<GameUI>();
+            GameModule.UI.CloseUI<RoomUI>();
+
             // 主动离开：GameUI 已先弹"正在解散/退出房间..."提示，这里不重复；
             // 被动断线：先弹"正在返回大厅..."并等过渡完成，再切场景弹菜单
-            if (!string.IsNullOrEmpty(reason) && !RoomManager.Instance.HostClosedNotified
-                && SceneManager.GetActiveScene().name != LauncherSceneLocation)
+            RoomManager room = RoomManager.Instance;
+            if (!string.IsNullOrEmpty(reason) && SceneManager.GetActiveScene().name != LauncherSceneLocation)
             {
-                GameModule.UI.ShowUI<TipsUI>("正在返回大厅...");
+                // 之前没弹过则现在弹；无论 instant 还是淡入路径，都等背景完全显示再切场景
+                if (!room.HostClosedNotified && !room.DisconnectTipShown)
+                {
+                    GameModule.UI.ShowUI<TipsUI>("正在返回大厅...", true);
+                }
+
                 await TipsUI.WaitShownAsync();
             }
 
@@ -154,12 +163,14 @@ namespace GameLogic
             }
 
             ShowMenu();
-            if (!string.IsNullOrEmpty(reason) && !RoomManager.Instance.HostClosedNotified)
+            if (!string.IsNullOrEmpty(reason) && !RoomManager.Instance.HostClosedNotified
+                && !RoomManager.Instance.DisconnectTipShown)
             {
                 GameModule.UI.ShowUI<TipsUI>(reason);
             }
 
             RoomManager.Instance.HostClosedNotified = false;
+            RoomManager.Instance.DisconnectTipShown = false;
             _returning = false;
         }
     }

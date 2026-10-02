@@ -116,7 +116,10 @@ namespace GameLogic
         {
             Local = this;
             InputManager.Instance.SetGameplayEnabled(true);
-            CameraManager.Instance.AttachFirstPerson(eyeCamera, transform.eulerAngles.y, modelRoot);
+            bool attached = CameraManager.Instance.AttachFirstPerson(eyeCamera, transform.eulerAngles.y, modelRoot);
+            Debug.Log($"[Player][诊断] 本地玩家生成，相机接管: {(attached ? "成功" : "失败")}，" +
+                      $"eyeCamera={(eyeCamera != null ? eyeCamera.name : "null")}，" +
+                      $"场景={UnityEngine.SceneManagement.SceneManager.GetActiveScene().name}");
             PreloadTappedFontAsync().Forget();
         }
 
@@ -339,6 +342,12 @@ namespace GameLogic
                     continue;
                 }
 
+                float touchDistance = _controller.radius + GetSphereRadius(rb);
+                if (dist > touchDistance + 0.08f + moveSpeed * Time.fixedDeltaTime)
+                {
+                    continue;
+                }
+
                 if (!TryGetBlockingHit(rb, moveDir, lookahead, out RaycastHit obstacle))
                 {
                     continue;
@@ -454,8 +463,10 @@ namespace GameLogic
                 }
 
                 Rigidbody other = hit.rigidbody;
-                if (other != null && !other.isKinematic && other.GetComponent<CharacterController>() == null)
+                if (other != null && other.GetComponent<CharacterController>() == null)
                 {
+                    // 其他刚体（另一颗球，无论动态还是运动学）不算这颗球的"墙"，
+                    // 否则墙边一颗被门控的球会把身后一整片球全部链式冻结
                     continue;
                 }
 

@@ -111,6 +111,27 @@ namespace GameLogic
         /// </summary>
         public bool HostClosedNotified { get; set; }
 
+        /// <summary>
+        /// 客户端：断开提示已弹出（Mirror 断开回调里即时弹出，返回大厅流程不再重复弹）。
+        /// </summary>
+        public bool DisconnectTipShown { get; set; }
+
+        /// <summary>
+        /// 连接断开的第一时间（网络对象尚未销毁）弹出即时提示，罩住断开瞬间的画面变化。
+        /// 由 SessionManager 在 Mirror 断开回调中调用。
+        /// </summary>
+        public void NotifyDisconnectTip()
+        {
+            if (DisconnectTipShown)
+            {
+                return;
+            }
+
+            DisconnectTipShown = true;
+            Log.Warning($"[Room][诊断] 断开提示即时弹出 帧={Time.frameCount}");
+            GameModule.UI.ShowUI<TipsUI>("与房间的连接已断开，正在返回大厅...", true);
+        }
+
         private int _hostCloseAcks;
 
         // 房间列表
@@ -1011,7 +1032,7 @@ namespace GameLogic
         {
             HostClosedNotified = true;
             Log.Info("[Room] 收到房主解散通知");
-            GameModule.UI.ShowUI<TipsUI>("主机已解散房间，正在返回大厅...");
+            GameModule.UI.ShowUI<TipsUI>("主机已解散房间，正在返回大厅...", true);
             SendHostClosedAckAsync().Forget();
         }
 
@@ -1137,6 +1158,7 @@ namespace GameLogic
                 Log.Warning("[Room][诊断] 本地玩家尚未生成，重新请求");
                 RequestLocalPlayer();
                 await WaitLocalPlayerReadyAsync();
+                Log.Warning($"[Room][诊断] 二次请求后本地玩家: {(NetworkClient.localPlayer != null ? "已生成" : "仍未生成")}");
             }
 
             Log.Info($"[Room][诊断] 本地玩家状态: {(NetworkClient.localPlayer != null ? "已生成" : "未生成")}");

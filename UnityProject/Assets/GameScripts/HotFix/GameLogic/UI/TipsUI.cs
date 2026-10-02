@@ -57,9 +57,17 @@ namespace GameLogic
 
         protected override void OnRefresh()
         {
-            if (UserData is string message && !string.IsNullOrEmpty(message))
+            string message = UserData as string;
+            bool instant = false;
+            if (message == null && UserDatas != null && UserDatas.Length >= 2)
             {
-                PlayAsync(message).Forget();
+                message = UserDatas[0] as string;
+                instant = UserDatas.Length > 1 && UserDatas[1] is bool flag && flag;
+            }
+
+            if (!string.IsNullOrEmpty(message))
+            {
+                PlayAsync(message, instant).Forget();
             }
         }
 
@@ -70,14 +78,25 @@ namespace GameLogic
             _shownSource = null;
         }
 
-        private async UniTaskVoid PlayAsync(string message)
+        private async UniTaskVoid PlayAsync(string message, bool instant)
         {
             int generation = ++_showing;
             _tween?.Kill(true);
 
             _mtmp_textTips.text = message;
-            SetAlpha(0f);
-            rectTransform.anchoredPosition = _restPosition + new Vector2(0f, -24f);
+            if (instant)
+            {
+                // 断开等突发事件：跳过淡入立即全显，罩住当帧就会发生的画面变化
+                SetAlpha(1f);
+                rectTransform.anchoredPosition = _restPosition;
+                _shownSource?.TrySetResult();
+                _shownSource = null;
+            }
+            else
+            {
+                SetAlpha(0f);
+                rectTransform.anchoredPosition = _restPosition + new Vector2(0f, -24f);
+            }
 
             Sequence sequence = DOTween.Sequence();
             if (_imgBackager != null)
