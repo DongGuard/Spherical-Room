@@ -17,7 +17,7 @@ Unity 6 四人派对。玩家在房间里推动共享球。开房的那台机器
 
 ## 架构
 
-![Spherical Room 架构图](docs/architecture.svg)
+![Spherical Room 架构图](docs/架构图.png)
 
 ## 编辑器ParrelSync测试记录
 1.双开编辑器一个新建房间一个加入房间是否显示正常
