@@ -33,12 +33,25 @@ namespace GameLogic
         private Tween _tween;
         private int _showing;
 
+        private static UniTaskCompletionSource _shownSource;
+
+        /// <summary>
+        /// 等待当前提示完全显示（背景与文字淡入到位）。
+        /// </summary>
+        public static UniTask WaitShownAsync()
+        {
+            _shownSource ??= new UniTaskCompletionSource();
+            return _shownSource.Task;
+        }
+
         protected override void OnCreate()
         {
             _restPosition = rectTransform.anchoredPosition;
             if (_imgBackager != null)
             {
                 _imageAlpha = _imgBackager.color.a;
+                // 提示背景不拦截点击
+                _imgBackager.raycastTarget = false;
             }
         }
 
@@ -53,6 +66,8 @@ namespace GameLogic
         protected override void OnDestroy()
         {
             _tween?.Kill(true);
+            _shownSource?.TrySetResult();
+            _shownSource = null;
         }
 
         private async UniTaskVoid PlayAsync(string message)
@@ -74,6 +89,8 @@ namespace GameLogic
                 .Join(rectTransform.DOAnchorPos(_restPosition, InDuration).SetEase(Ease.OutCubic));
             _tween = sequence;
             await _tween.AsyncWaitForCompletion();
+            _shownSource?.TrySetResult();
+            _shownSource = null;
             if (generation != _showing || IsDestroyed)
             {
                 return;

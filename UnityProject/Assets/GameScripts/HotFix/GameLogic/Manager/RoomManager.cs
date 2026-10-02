@@ -12,51 +12,56 @@ using Steamworks;
 namespace GameLogic
 {
     /// <summary>
-    /// 房间流程：创建房间、房间列表、加入（含 Steam 邀请）、等待、开局、生成玩家和球、离开。
-    /// <para>
-    /// 全球联机：房主创建 Steam 公开大厅并作为 Mirror 主机（FizzySteamworks，经 Steam 中继），
-    /// 其他玩家在列表里搜到大厅或收到邀请后加入大厅，再按房主 SteamID 建立 Mirror 连接。
-    /// 开发版额外提供局域网 / 本机房间（KCP + UDP 广播），方便一台电脑测试。
-    /// </para>
-    /// <para>
-    /// 时序：加入房间时就建立 Mirror 连接并通过认证（密码、人数、阶段由房主校验），RoomUI 的数据由房主下发；
-    /// 房主开始游戏 → 房主先加载游戏场景并生成球 → 广播 Playing → 各成员加载场景后 Ready + AddPlayer，
-    /// 房主为其生成玩家。中途加入的玩家通过认证后直接收到 Playing，流程相同。
-    /// </para>
-    /// UI 只调用这里的接口并订阅事件，窗口切换见 LobbyUIFlow。
+    /// 房间管理器
     /// </summary>
     public class RoomManager : Singleton<RoomManager>, IUpdate
     {
-        /// <summary>游戏场景的 YooAsset 地址。</summary>
+        /// <summary>
+        /// 游戏场景的 YooAsset 地址。
+        /// </summary>
         public const string GameSceneLocation = "Room";
 
         private const string GameSceneName = "Room";
         private const string PlayerPrefabLocation = "Player";
         private const string BallPrefabLocation = "Sphere";
 
-        /// <summary>场景里名字以此开头的物体作为出生点（按名字排序，依次分配给各位置）。</summary>
+        /// <summary>
+        /// 场景里名字以此开头的物体作为出生点（按名字排序，依次分配给各位置）。
+        /// </summary>
         private const string SpawnPointPrefix = "SpawnPoint";
 
-        /// <summary>局域网搜索窗口（秒）。窗口需大于大厅列表的刷新间隔，刷新时只延长不清空。</summary>
+        /// <summary>
+        /// 局域网搜索窗口（秒）。窗口需大于大厅列表的刷新间隔，刷新时只延长不清空。
+        /// </summary>
         private const float LanSearchDuration = 5f;
 
-        /// <summary>定时生成：游戏中主机每隔该时间（秒）随机生成一个球。</summary>
+        /// <summary>
+        /// 定时生成：游戏中主机每隔该时间（秒）随机生成一个球。
+        /// </summary>
         private const float BallSpawnInterval = 15f;
 
         private const float RandomBallRadius = 6f;
 
-        /// <summary>定时生成的球相对出生点的高度（米），从空中落入房间。</summary>
+        /// <summary>
+        /// 定时生成的球相对出生点的高度（米），从空中落入房间。
+        /// </summary>
         private const float RandomBallDropHeight = 3f;
 
-        /// <summary>认证通过后等待房间状态的最长时间（秒）。</summary>
+        /// <summary>
+        /// 认证通过后等待房间状态的最长时间（秒）。
+        /// </summary>
         private const float RoomStateTimeout = 10f;
 
-        /// <summary>场景里没有出生点时的默认位置：Room 场景地面中部，各位置沿 X 轴错开。</summary>
+        /// <summary>
+        /// 场景里没有出生点时的默认位置：Room 场景地面中部，各位置沿 X 轴错开。
+        /// </summary>
         private static readonly Vector3 DefaultSpawnCenter = new Vector3(18.19f, 0.4f, 55.88f);
 
         private static readonly float[] DefaultSpawnOffsets = { 0f, 4f, -4f, 8f };
 
-        /// <summary>弹出密码输入框，返回输入的密码，取消返回 null。</summary>
+        /// <summary>
+        /// 弹出密码输入框，返回输入的密码，取消返回 null。
+        /// </summary>
         public delegate UniTask<string> PasswordPromptHandler(string roomName);
 
         public delegate void OperationFinishedHandler(RoomOpResult result);
@@ -91,11 +96,22 @@ namespace GameLogic
         private RoomPhase _serverPhase;
         private readonly List<ServerMember> _members = new List<ServerMember>();
         private readonly List<Transform> _spawnPoints = new List<Transform>();
-        /// <summary>房主生成的共享球（开局一个 + 定时生成的随机球）。</summary>
+        /// <summary>
+        /// 房主生成的共享球（开局一个 + 定时生成的随机球）。
+        /// </summary>
         private readonly List<GameObject> _balls = new List<GameObject>();
 
-        /// <summary>下次定时生成球的时间（unscaled）。</summary>
+        /// <summary>
+        /// 下次定时生成球的时间（unscaled）。
+        /// </summary>
         private float _nextBallSpawnTime;
+
+        /// <summary>
+        /// 客户端：是否已收到并提示过"房主解散"（避免返回大厅时重复弹提示）。
+        /// </summary>
+        public bool HostClosedNotified { get; set; }
+
+        private int _hostCloseAcks;
 
         // 房间列表
         private readonly List<RoomListEntry> _steamEntries = new List<RoomListEntry>();
@@ -107,36 +123,56 @@ namespace GameLogic
         private CSteamID _pendingInvite = CSteamID.Nil;
 #endif
 
-        /// <summary>当前房间信息变化（成员、设置、阶段）。</summary>
+        /// <summary>
+        /// 当前房间信息变化（成员、设置、阶段）。
+        /// </summary>
         public event Action RoomUpdated;
 
-        /// <summary>离开了房间。参数为原因，主动离开时为 null。</summary>
+        /// <summary>
+        /// 离开了房间。参数为原因，主动离开时为 null。
+        /// </summary>
         public event Action<string> RoomClosed;
 
-        /// <summary>房间列表变化。</summary>
+        /// <summary>
+        /// 房间列表变化。
+        /// </summary>
         public event Action RoomListUpdated;
 
-        /// <summary>开始一个耗时操作（创建 / 加入），参数为提示文本。</summary>
+        /// <summary>
+        /// 开始一个耗时操作（创建 / 加入），参数为提示文本。
+        /// </summary>
         public event Action<string> OperationStarted;
 
-        /// <summary>耗时操作结束。</summary>
+        /// <summary>
+        /// 耗时操作结束。
+        /// </summary>
         public event OperationFinishedHandler OperationFinished;
 
-        /// <summary>开始加载游戏场景。</summary>
+        /// <summary>
+        /// 开始加载游戏场景。
+        /// </summary>
         public event Action GameLoading;
 
-        /// <summary>已进入游戏场景并请求生成玩家。</summary>
+        /// <summary>
+        /// 已进入游戏场景并请求生成玩家。
+        /// </summary>
         public event Action GameEntered;
 
-        /// <summary>在房间中收到 Steam 邀请，参数为提示文本，由 UI 确认后调用 AcceptPendingInvite。</summary>
+        /// <summary>
+        /// 在房间中收到 Steam 邀请，参数为提示文本，由 UI 确认后调用 AcceptPendingInvite。
+        /// </summary>
         public event Action<string> InviteReceived;
 
-        /// <summary>游戏中按下 Esc，由 UI 确认是否离开。</summary>
+        /// <summary>
+        /// 游戏中按下 Esc，由 UI 确认是否离开。
+        /// </summary>
         public event Action LeaveRequested;
 
         public PasswordPromptHandler PasswordPrompt { get; set; }
 
-        /// <summary>当前房间，不在房间中为 null。</summary>
+        /// <summary>
+        /// 当前房间，不在房间中为 null。
+        /// </summary>
         public RoomInfo Room => _room;
 
         public bool IsInRoom => _room != null;
@@ -155,10 +191,14 @@ namespace GameLogic
 
         public bool IsRefreshing => _steamListing || _lan.IsSearching;
 
-        /// <summary>最近一次刷新 Steam 列表的错误，成功时为 null。</summary>
+        /// <summary>
+        /// 最近一次刷新 Steam 列表的错误，成功时为 null。
+        /// </summary>
         public string ListError => _listError;
 
-        /// <summary>是否可以邀请 Steam 好友（房间开放了 Steam 连接）。</summary>
+        /// <summary>
+        /// 是否可以邀请 Steam 好友（房间开放了 Steam 连接）。
+        /// </summary>
         public bool CanInvite
         {
             get
@@ -218,7 +258,9 @@ namespace GameLogic
             UpdateBallSpawnTimer();
         }
 
-        /// <summary>定时生成：由主机控制，游戏中每 15 秒在房间内随机位置生成一个球。</summary>
+        /// <summary>
+        /// 定时生成：由主机控制，游戏中每 15 秒在房间内随机位置生成一个球。
+        /// </summary>
         private void UpdateBallSpawnTimer()
         {
             if (!IsHost || !_inGame || _serverPhase != RoomPhase.Playing)
@@ -269,7 +311,9 @@ namespace GameLogic
 
         #region 创建房间
 
-        /// <summary>创建房间并作为房主进入。结果同时通过 OperationFinished 通知。</summary>
+        /// <summary>
+        /// 创建房间并作为房主进入。结果同时通过 OperationFinished 通知。
+        /// </summary>
         public async UniTask<RoomOpResult> CreateRoomAsync(RoomSettings settings)
         {
             if (!TryBeginOperation("正在创建房间...", out RoomOpResult blocked))
@@ -384,7 +428,9 @@ namespace GameLogic
 
         #region 房间列表
 
-        /// <summary>刷新房间列表：Steam 全球搜索 + 开发版局域网搜索，结果通过 RoomListUpdated 通知。</summary>
+        /// <summary>
+        /// 刷新房间列表：Steam 全球搜索 + 开发版局域网搜索，结果通过 RoomListUpdated 通知。
+        /// </summary>
         public void RefreshRoomList()
         {
             if (SessionManager.LanEnabled)
@@ -419,7 +465,9 @@ namespace GameLogic
         }
 #endif
 
-        /// <summary>合并 Steam 和局域网结果：只保留能加入的房间，同一房间两条记录时保留局域网那条。</summary>
+        /// <summary>
+        /// 合并 Steam 和局域网结果：只保留能加入的房间，同一房间两条记录时保留局域网那条。
+        /// </summary>
         private void RebuildRoomList()
         {
             _roomList.Clear();
@@ -476,7 +524,9 @@ namespace GameLogic
 
         #region 加入房间
 
-        /// <summary>加入列表中的房间，有密码时通过 PasswordPrompt 询问。结果同时通过 OperationFinished 通知。</summary>
+        /// <summary>
+        /// 加入列表中的房间，有密码时通过 PasswordPrompt 询问。结果同时通过 OperationFinished 通知。
+        /// </summary>
         public async UniTask<RoomOpResult> JoinRoomAsync(RoomListEntry entry)
         {
             if (entry == null)
@@ -646,7 +696,9 @@ namespace GameLogic
         }
 #endif
 
-        /// <summary>接受在房间中收到的邀请：离开当前房间，再加入邀请的房间。</summary>
+        /// <summary>
+        /// 接受在房间中收到的邀请：离开当前房间，再加入邀请的房间。
+        /// </summary>
         public void AcceptPendingInvite()
         {
 #if UNITY_STANDALONE_WIN
@@ -691,7 +743,9 @@ namespace GameLogic
             _inGame = false;
         }
 
-        /// <summary>等待连接和认证完成，再等房主下发第一份房间状态。</summary>
+        /// <summary>
+        /// 等待连接和认证完成，再等房主下发第一份房间状态。
+        /// </summary>
         private async UniTask<RoomOpResult> ConnectAsync(UniTask<RoomOpResult> joinTask)
         {
             RoomOpResult result = await joinTask;
@@ -742,7 +796,9 @@ namespace GameLogic
 
         #region 房间内操作
 
-        /// <summary>房主：设置是否允许中途加入（游戏中不允许时，Steam 大厅也会设为不可加入）。</summary>
+        /// <summary>
+        /// 房主：设置是否允许中途加入（游戏中不允许时，Steam 大厅也会设为不可加入）。
+        /// </summary>
         public void SetAllowMidJoin(bool allow)
         {
             if (!_session.IsHost || _settings == null || _settings.AllowMidJoin == allow)
@@ -754,7 +810,9 @@ namespace GameLogic
             PublishRoomState();
         }
 
-        /// <summary>打开 Steam 好友邀请对话框。</summary>
+        /// <summary>
+        /// 打开 Steam 好友邀请对话框。
+        /// </summary>
         public void OpenInviteDialog()
         {
 #if UNITY_STANDALONE_WIN
@@ -762,7 +820,9 @@ namespace GameLogic
 #endif
         }
 
-        /// <summary>房主：开始游戏。可以不等其他人，直接开始。</summary>
+        /// <summary>
+        /// 房主：开始游戏。可以不等其他人，直接开始。
+        /// </summary>
         public async UniTask<RoomOpResult> StartGameAsync()
         {
             if (!_session.IsHost || _settings == null)
@@ -822,8 +882,10 @@ namespace GameLogic
             return RoomOpResult.Ok();
         }
 
-        /// <summary>离开房间：房主离开会关闭房间（所有成员断开），成员离开只断开自己。</summary>
-        public void LeaveRoom()
+        /// <summary>
+        /// 离开房间：房主离开会关闭房间（所有成员断开），成员离开只断开自己。
+        /// </summary>
+        public async UniTaskVoid LeaveRoom()
         {
             if (!IsInRoom && !_loadingGame && !_inGame && _session.State == SessionState.Offline)
             {
@@ -832,6 +894,36 @@ namespace GameLogic
             }
 
             Log.Info(_session.IsHost ? "[Room] 房主关闭房间" : "[Room] 离开房间");
+
+#if UNITY_STANDALONE_WIN
+            if (_session.IsHost)
+            {
+                // 通知所有成员弹出"房主解散"提示；等每个成员回执"提示已完全显示"再拆连接（3 秒超时兜底）
+                NetworkServer.ReplaceHandler<HostClosedAckMessage>(OnHostClosedAck);
+                _hostCloseAcks = 0;
+                int expected = 0;
+                foreach (ServerMember member in _members)
+                {
+                    if (member.Connection != null && !member.IsHost)
+                    {
+                        member.Connection.Send(new HostClosedMessage());
+                        expected++;
+                    }
+                }
+
+                float deadline = Time.unscaledTime + 3f;
+                while (_hostCloseAcks < expected && Time.unscaledTime < deadline && _session.IsHost)
+                {
+                    await UniTask.Yield();
+                }
+
+                if (!_session.IsHost)
+                {
+                    return;
+                }
+            }
+#endif
+
             ResetRoom(true);
             RoomClosed?.Invoke(null);
         }
@@ -889,6 +981,34 @@ namespace GameLogic
             // NetworkClient 每次关闭都会清空消息处理，每次启动重新注册
             NetworkClient.ReplaceHandler<RoomStateMessage>(OnRoomStateMessage);
             NetworkClient.ReplaceHandler<BallVelocityMessage>(OnBallVelocityMessage);
+            NetworkClient.ReplaceHandler<HostClosedMessage>(OnHostClosedMessage);
+            NetworkServer.ReplaceHandler<HostClosedAckMessage>(OnHostClosedAck);
+        }
+
+        /// <summary>
+        /// 客户端：收到房主解散通知，立刻弹提示盖住画面；提示完全显示后回执主机。
+        /// </summary>
+        private void OnHostClosedMessage(HostClosedMessage msg)
+        {
+            HostClosedNotified = true;
+            Log.Info("[Room] 收到房主解散通知");
+            GameModule.UI.ShowUI<TipsUI>("主机已解散房间，正在返回大厅...");
+            SendHostClosedAckAsync().Forget();
+        }
+
+        private async UniTaskVoid SendHostClosedAckAsync()
+        {
+            // 等提示完全显示（背景淡入到位）再回执，主机收到后才开始拆连接
+            await TipsUI.WaitShownAsync();
+            if (NetworkClient.active)
+            {
+                NetworkClient.connection.Send(new HostClosedAckMessage());
+            }
+        }
+
+        private void OnHostClosedAck(HostClosedAckMessage msg)
+        {
+            _hostCloseAcks++;
         }
 
         private void OnRoomStateMessage(RoomStateMessage msg)
@@ -906,7 +1026,9 @@ namespace GameLogic
             }
         }
 
-        /// <summary>服务端：玩家对象生成后补发所有共享球的当前速度，供中途加入同步；Host 本地连接不用发。</summary>
+        /// <summary>
+        /// 服务端：玩家对象生成后补发所有共享球的当前速度，供中途加入同步；Host 本地连接不用发。
+        /// </summary>
         private void OnServerPlayerSpawned(NetworkConnectionToClient conn)
         {
             if (conn is LocalConnectionToClient)
@@ -987,7 +1109,9 @@ namespace GameLogic
             GameEntered?.Invoke();
         }
 
-        /// <summary>等待本地玩家生成到位并稍作稳定，再通知进入游戏关闭房间 UI，避免视觉穿帮。</summary>
+        /// <summary>
+        /// 等待本地玩家生成到位并稍作稳定，再通知进入游戏关闭房间 UI，避免视觉穿帮。
+        /// </summary>
         private static async UniTask WaitLocalPlayerReadyAsync()
         {
             // 客户端要等服务器生成玩家并同步回来；超时兜底，期间断线由外层的序号检查处理
@@ -1020,7 +1144,9 @@ namespace GameLogic
             }
         }
 
-        /// <summary>场景加载完成后：Ready（开始接收网络对象）并请求生成自己的玩家。</summary>
+        /// <summary>
+        /// 场景加载完成后：Ready（开始接收网络对象）并请求生成自己的玩家。
+        /// </summary>
         private static void RequestLocalPlayer()
         {
             if (!NetworkClient.isConnected)
@@ -1223,7 +1349,9 @@ namespace GameLogic
                    (_serverPhase == RoomPhase.Waiting || _settings.AllowMidJoin);
         }
 
-        /// <summary>房主：把房间状态同步给自己（RoomUI）、所有成员、Steam 大厅数据。</summary>
+        /// <summary>
+        /// 房主：把房间状态同步给自己（RoomUI）、所有成员、Steam 大厅数据。
+        /// </summary>
         private void PublishRoomState()
         {
             if (_settings == null || !NetworkServer.active)

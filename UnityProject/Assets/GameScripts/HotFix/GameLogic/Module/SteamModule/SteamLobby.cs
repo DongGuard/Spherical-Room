@@ -16,10 +16,14 @@ namespace GameLogic
         public string Message;
         public CSteamID Lobby = CSteamID.Nil;
 
-        /// <summary>加入成功时：房主 SteamID（Mirror 主机）。</summary>
+        /// <summary>
+        /// 加入成功时：房主 SteamID（Mirror 主机）。
+        /// </summary>
         public CSteamID Host = CSteamID.Nil;
 
-        /// <summary>加入成功时：大厅里的房间信息。</summary>
+        /// <summary>
+        /// 加入成功时：大厅里的房间信息。
+        /// </summary>
         public RoomListEntry Entry;
 
         public static SteamLobbyResult Ok(CSteamID lobby)
@@ -45,11 +49,6 @@ namespace GameLogic
 
     /// <summary>
     /// Steam 大厅：负责"找到房间"——创建公开大厅、按游戏标记全球搜索、加入、好友邀请。
-    /// <para>
-    /// 大厅主人即 Mirror 主机，成员拿到房主 SteamID 后由 SessionManager 通过 FizzySteamworks 连接（Steam 中继，全球可连）。
-    /// 大厅数据只放列表展示用的信息（房间名、人数、是否有密码、阶段等），密码本身由主机在认证时校验。
-    /// </para>
-    /// 房间流程见 RoomManager。
     /// </summary>
     public class SteamLobby : Singleton<SteamLobby>
     {
@@ -69,7 +68,9 @@ namespace GameLogic
         private const string KeyMax = "max";
         private const string KeyHost = "host";
 
-        /// <summary>游戏未运行时接受邀请，Steam 会带 +connect_lobby &lt;lobbyId&gt; 参数启动游戏。</summary>
+        /// <summary>
+        /// 游戏未运行时接受邀请，Steam 会带 +connect_lobby &lt;lobbyId&gt; 参数启动游戏。
+        /// </summary>
         private const string ConnectLobbyArg = "+connect_lobby";
 
         private const int RequestTimeoutMs = 15000;
@@ -86,12 +87,16 @@ namespace GameLogic
         private UniTaskCompletionSource<SteamLobbyListResult> _listTcs;
         private UniTaskCompletionSource<SteamLobbyResult> _joinTcs;
 
-        /// <summary>已写入大厅的数据，避免重复写（每次写入都会通知所有成员）。</summary>
+        /// <summary>
+        /// 已写入大厅的数据，避免重复写（每次写入都会通知所有成员）。
+        /// </summary>
         private readonly Dictionary<string, string> _publishedData = new Dictionary<string, string>();
 
         private bool _publishedJoinable = true;
 
-        /// <summary>收到好友邀请，或在 Steam 好友列表点了"加入游戏"。</summary>
+        /// <summary>
+        /// 收到好友邀请，或在 Steam 好友列表点了"加入游戏"。
+        /// </summary>
         public event JoinRequestHandler JoinRequested;
 
         public CSteamID CurrentLobby { get; private set; } = CSteamID.Nil;
@@ -129,7 +134,9 @@ namespace GameLogic
 
         #region 创建 / 搜索 / 加入 / 离开
 
-        /// <summary>创建公开大厅（全球可搜索），成功后本机即为大厅主人。</summary>
+        /// <summary>
+        /// 创建公开大厅（全球可搜索），成功后本机即为大厅主人。
+        /// </summary>
         public async UniTask<SteamLobbyResult> CreateLobbyAsync(int maxMembers)
         {
             if (!Available)
@@ -166,7 +173,9 @@ namespace GameLogic
             return result;
         }
 
-        /// <summary>全球搜索本游戏、同版本、有空位且可加入的大厅。</summary>
+        /// <summary>
+        /// 全球搜索本游戏、同版本、有空位且可加入的大厅。
+        /// </summary>
         public async UniTask<SteamLobbyListResult> RequestLobbyListAsync()
         {
             if (!Available)
@@ -195,7 +204,9 @@ namespace GameLogic
             return result;
         }
 
-        /// <summary>加入大厅，成功后返回房主 SteamID 和大厅里的房间信息。</summary>
+        /// <summary>
+        /// 加入大厅，成功后返回房主 SteamID 和大厅里的房间信息。
+        /// </summary>
         public async UniTask<SteamLobbyResult> JoinLobbyAsync(CSteamID lobby)
         {
             if (!Available)
@@ -249,7 +260,9 @@ namespace GameLogic
             _publishedData.Clear();
         }
 
-        /// <summary>打开 Steam 覆盖层的好友邀请对话框（需要 Steam 覆盖层可用）。</summary>
+        /// <summary>
+        /// 打开 Steam 覆盖层的好友邀请对话框（需要 Steam 覆盖层可用）。
+        /// </summary>
         public void OpenInviteDialog()
         {
             if (InLobby && SteamManager.Initialized)
@@ -260,7 +273,6 @@ namespace GameLogic
 
         /// <summary>
         /// 房主：把当前房间信息写入大厅数据，并设置是否可加入。
-        /// 不可加入时大厅不会出现在搜索结果里，好友邀请和"加入游戏"也会被 Steam 拒绝。
         /// </summary>
         public void PublishRoom(string roomId, RoomInfo room, bool joinable)
         {
@@ -296,7 +308,9 @@ namespace GameLogic
             }
         }
 
-        /// <summary>从大厅数据读取房间信息，不是本游戏的大厅返回 null。</summary>
+        /// <summary>
+        /// 从大厅数据读取房间信息，不是本游戏的大厅返回 null。
+        /// </summary>
         public RoomListEntry ReadLobbyEntry(CSteamID lobby)
         {
             if (SteamMatchmaking.GetLobbyData(lobby, KeyGame) != GameTag)
@@ -330,7 +344,9 @@ namespace GameLogic
             return entry;
         }
 
-        /// <summary>游戏是否由 Steam 邀请启动（命令行带 +connect_lobby）。</summary>
+        /// <summary>
+        /// 游戏是否由 Steam 邀请启动（命令行带 +connect_lobby）。
+        /// </summary>
         public static bool TryGetCommandLineLobby(out CSteamID lobby)
         {
             string[] args = Environment.GetCommandLineArgs();

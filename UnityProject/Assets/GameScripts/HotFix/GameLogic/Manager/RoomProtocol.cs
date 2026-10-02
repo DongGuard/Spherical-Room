@@ -12,13 +12,19 @@ namespace GameLogic
     {
         None = 0,
 
-        /// <summary>等待中：在 RoomUI 里等人。</summary>
+        /// <summary>
+        /// 等待中：在 RoomUI 里等人。
+        /// </summary>
         Waiting = 1,
 
-        /// <summary>开局中：房主正在加载游戏场景。</summary>
+        /// <summary>
+        /// 开局中：房主正在加载游戏场景。
+        /// </summary>
         Starting = 2,
 
-        /// <summary>游戏中。</summary>
+        /// <summary>
+        /// 游戏中。
+        /// </summary>
         Playing = 3
     }
 
@@ -27,10 +33,14 @@ namespace GameLogic
     /// </summary>
     public enum RoomSource
     {
-        /// <summary>Steam 公开大厅，全球可见，经 Steam 中继连接。</summary>
+        /// <summary>
+        /// Steam 公开大厅，全球可见，经 Steam 中继连接。
+        /// </summary>
         Steam,
 
-        /// <summary>局域网 / 本机（KCP 直连），只在开发版或 Steam 不可用时提供。</summary>
+        /// <summary>
+        /// 局域网 / 本机（KCP 直连），只在开发版或 Steam 不可用时提供。
+        /// </summary>
         Lan
     }
 
@@ -39,7 +49,9 @@ namespace GameLogic
     /// </summary>
     public static class RoomProtocol
     {
-        /// <summary>联机协议版本：消息或流程有不兼容改动时 +1，版本不同的客户端会被主机拒绝。</summary>
+        /// <summary>
+        /// 联机协议版本：消息或流程有不兼容改动时 +1，版本不同的客户端会被主机拒绝。
+        /// </summary>
         public const int Version = 1;
 
         public const int MaxPlayers = 4;
@@ -61,7 +73,9 @@ namespace GameLogic
             }
         }
 
-        /// <summary>去掉首尾空白和控制字符，并限制长度（房间名、昵称、密码共用）。</summary>
+        /// <summary>
+        /// 去掉首尾空白和控制字符，并限制长度（房间名、昵称、密码共用）。
+        /// </summary>
         public static string Sanitize(string value, int maxLength)
         {
             if (string.IsNullOrEmpty(value))
@@ -106,11 +120,27 @@ namespace GameLogic
     }
 
     /// <summary>
+    /// 主机 → 客户端：房主即将解散房间。客户端收到后立刻弹出提示盖住画面，
+    /// </summary>
+    public struct HostClosedMessage : NetworkMessage
+    {
+    }
+
+    /// <summary>
+    /// 客户端 → 主机：已收到解散通知且提示完全显示，主机可以开始拆连接。
+    /// </summary>
+    public struct HostClosedAckMessage : NetworkMessage
+    {
+    }
+
+    /// <summary>
     /// 房间成员（同步用）。
     /// </summary>
     public struct RoomMemberData
     {
-        /// <summary>RoomUI 中的位置，房主固定为 0。</summary>
+        /// <summary>
+        /// RoomUI 中的位置，房主固定为 0。
+        /// </summary>
         public int Slot;
         public string Name;
         public ulong SteamId;
@@ -119,7 +149,6 @@ namespace GameLogic
 
     /// <summary>
     /// 主机 → 客户端：房间完整状态，成员、设置或阶段变化时整包下发。
-    /// 密码只发给已经通过认证（输对密码）的成员，用于 RoomUI 展示。
     /// </summary>
     public struct RoomStateMessage : NetworkMessage
     {
@@ -131,14 +160,20 @@ namespace GameLogic
         public RoomPhase Phase;
         public RoomMemberData[] Members;
 
-        /// <summary>接收方自己的位置，-1 表示未知。</summary>
+        /// <summary>
+        /// 接收方自己的位置，-1 表示未知。
+        /// </summary>
         public int YourSlot;
     }
 
-    /// <summary>主机 → 客户端：共享球的当前速度，玩家对象生成后补发一次。</summary>
+    /// <summary>
+    /// 主机 → 客户端：共享球的当前速度，玩家对象生成后补发一次。
+    /// </summary>
     public struct BallVelocityMessage : NetworkMessage
     {
-        /// <summary>球的 NetworkIdentity netId，客户端据此定位刚体。</summary>
+        /// <summary>
+        /// 球的 NetworkIdentity netId，客户端据此定位刚体。
+        /// </summary>
         public uint BallNetId;
         public Vector3 Velocity;
         public Vector3 AngularVelocity;
@@ -175,7 +210,9 @@ namespace GameLogic
         public ulong SteamId;
         public bool IsHost;
 
-        /// <summary>是否是本机玩家。</summary>
+        /// <summary>
+        /// 是否是本机玩家。
+        /// </summary>
         public bool IsLocal;
     }
 
@@ -191,10 +228,14 @@ namespace GameLogic
         public int MaxPlayers;
         public RoomPhase Phase;
 
-        /// <summary>本机是否是房主。</summary>
+        /// <summary>
+        /// 本机是否是房主。
+        /// </summary>
         public bool IsLocalHost;
 
-        /// <summary>本机玩家所在位置，-1 表示未知。</summary>
+        /// <summary>
+        /// 本机玩家所在位置，-1 表示未知。
+        /// </summary>
         public int LocalSlot = -1;
 
         public readonly List<RoomMember> Members = new List<RoomMember>();
@@ -220,7 +261,9 @@ namespace GameLogic
     {
         public RoomSource Source;
 
-        /// <summary>主机每次开房生成的唯一 ID，用于合并同一房间的 Steam / 局域网两条记录。</summary>
+        /// <summary>
+        /// 主机每次开房生成的唯一 ID，用于合并同一房间的 Steam / 局域网两条记录。
+        /// </summary>
         public string RoomId;
 
         public string Name;
@@ -231,21 +274,31 @@ namespace GameLogic
         public int MaxPlayers;
         public int Version;
 
-        /// <summary>Steam：大厅 ID。</summary>
+        /// <summary>
+        /// Steam：大厅 ID。
+        /// </summary>
         public ulong SteamLobbyId;
 
-        /// <summary>Steam：房主 SteamID。</summary>
+        /// <summary>
+        /// Steam：房主 SteamID。
+        /// </summary>
         public ulong HostSteamId;
 
-        /// <summary>局域网：主机地址。</summary>
+        /// <summary>
+        /// 局域网：主机地址。
+        /// </summary>
         public string Address;
 
-        /// <summary>局域网：主机 KCP 端口。</summary>
+        /// <summary>
+        /// 局域网：主机 KCP 端口。
+        /// </summary>
         public ushort Port;
 
         public string SourceText => Source == RoomSource.Steam ? "Steam" : "局域网";
 
-        /// <summary>按列表里的信息判断能否加入（最终以主机认证结果为准）。</summary>
+        /// <summary>
+        /// 按列表里的信息判断能否加入（最终以主机认证结果为准）。
+        /// </summary>
         public bool CanJoin(out string reason)
         {
             if (Version != RoomProtocol.Version)
@@ -278,10 +331,14 @@ namespace GameLogic
     {
         public bool Success { get; private set; }
 
-        /// <summary>失败原因，可直接展示。</summary>
+        /// <summary>
+        /// 失败原因，可直接展示。
+        /// </summary>
         public string Message { get; private set; }
 
-        /// <summary>用户主动取消（如关闭密码输入框），不需要提示。</summary>
+        /// <summary>
+        /// 用户主动取消（如关闭密码输入框），不需要提示。
+        /// </summary>
         public bool IsCancelled { get; private set; }
 
         public static RoomOpResult Ok()

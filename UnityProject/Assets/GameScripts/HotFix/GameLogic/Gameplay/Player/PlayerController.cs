@@ -50,10 +50,14 @@ namespace GameLogic
         private Vector3 _planarVelocity;
         private float _verticalVelocity;
 
-        /// <summary>本机控制的玩家，未生成时为 null。</summary>
+        /// <summary>
+        /// 本机控制的玩家，未生成时为 null。
+        /// </summary>
         public static PlayerController Local { get; private set; }
 
-        /// <summary>Server：当前模拟速度，推球结算使用。</summary>
+        /// <summary>
+        /// Server：当前模拟速度，推球结算使用。
+        /// </summary>
         public Vector3 Velocity => _planarVelocity + Vector3.up * _verticalVelocity;
 
         private void Awake()
@@ -240,7 +244,9 @@ namespace GameLogic
             }
         }
 
-        /// <summary>推动共享球体：CharacterController 移动不会对刚体施力，需在碰撞回调里手动加力。</summary>
+        /// <summary>
+        /// 推动共享球体：CharacterController 移动不会对刚体施力，需在碰撞回调里手动加力。
+        /// </summary>
         private void OnControllerColliderHit(ControllerColliderHit hit)
         {
             if (!isServer)
@@ -280,14 +286,18 @@ namespace GameLogic
 
         #region 碰触提示
 
-        /// <summary>服务端：碰到共享球的玩家专属通知，只发给触碰者自己的客户端。</summary>
+        /// <summary>
+        /// 服务端：碰到共享球的玩家专属通知，只发给触碰者自己的客户端。
+        /// </summary>
         [TargetRpc]
         private void RpcTapped(NetworkConnectionToClient target)
         {
             ShowTapped();
         }
 
-        /// <summary>在屏幕上方短暂显示 "Tapped"。提示文本运行时创建，挂在 UIRoot 下。</summary>
+        /// <summary>
+        /// 在屏幕上方短暂显示 "Tapped"。提示文本运行时创建，挂在 UIRoot 下。
+        /// </summary>
         private void ShowTapped()
         {
             if (_tappedText == null)

@@ -45,9 +45,6 @@ namespace GameLogic
 
         /// <summary>
         /// 模块初始化（自动调用）。
-        /// 1. 查找场景中的UIRoot
-        /// 2. 初始化资源加载器
-        /// 3. 配置错误日志系统
         /// </summary>
         protected override void OnInit()
         {
@@ -99,9 +96,6 @@ namespace GameLogic
 
         /// <summary>
         /// 模块释放（自动调用）。
-        /// 1. 清理错误日志系统
-        /// 2. 关闭所有窗口
-        /// 3. 销毁UI根节点
         /// </summary>
         protected override void OnRelease()
         {
@@ -182,7 +176,6 @@ namespace GameLogic
 
         /// <summary>
         /// <summary>
-        /// 获取所有层级下顶部的窗口名称。
         /// </summary>
         public string GetTopWindow()
         {

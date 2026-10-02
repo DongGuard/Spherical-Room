@@ -181,7 +181,6 @@ namespace GameLogic
 
         /// <summary>
         /// 根据prefab或者模版来创建新的 widget。
-        /// <remarks>存在父物体得资源故不需要异步加载。</remarks>
         /// </summary>
         /// <param name="parentUI">父物体UI。</param>
         /// <param name="goPrefab">实例化预制体。</param>
@@ -276,7 +275,6 @@ namespace GameLogic
 
         /// <summary>
         /// 组件被销毁调用。
-        /// <remarks>请勿手动调用！</remarks>
         /// </summary>
         protected internal void OnDestroyWidget()
         {

@@ -298,7 +298,6 @@ namespace GameLogic
 
         /// <summary>
         /// 创建UIWidget通过父UI位置节点。
-        /// <remarks>因为资源实例已经存在父物体所以不需要异步。</remarks>
         /// </summary>
         /// <param name="goPath">父UI位置节点。</param>
         /// <param name="visible">是否可见。</param>
@@ -319,7 +318,6 @@ namespace GameLogic
 
         /// <summary>
         /// 创建UIWidget通过父UI位置节点。
-        /// <remarks>因为资源实例已经存在父物体所以不需要异步。</remarks>
         /// </summary>
         /// <param name="parentTrans"></param>
         /// <param name="goPath">父UI位置节点。</param>
@@ -339,7 +337,6 @@ namespace GameLogic
 
         /// <summary>
         /// 创建UIWidget通过游戏物体。
-        /// <remarks>因为资源实例已经存在父物体所以不需要异步。</remarks>
         /// </summary>
         /// <param name="goRoot">游戏物体。</param>
         /// <param name="visible">是否可见。</param>
@@ -430,7 +427,6 @@ namespace GameLogic
         /// <summary>
         /// 调整图标数量。
         /// </summary>
-        /// <remarks>常用于Icon创建。</remarks>
         /// <param name="listIcon">存放Icon的列表。</param>
         /// <param name="number">创建数目。</param>
         /// <param name="parentTrans">资源父节点。</param>

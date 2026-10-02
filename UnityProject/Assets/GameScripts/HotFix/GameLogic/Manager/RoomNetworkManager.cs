@@ -6,48 +6,62 @@ namespace GameLogic
 {
     /// <summary>
     /// Mirror NetworkManager 子类：只把 Mirror 的虚函数回调转成事件，并按房间规则生成玩家。
-    /// 会话状态在 SessionManager，房间流程在 RoomManager，这里不写玩法。
-    /// <para>
-    /// 连接时机：加入房间（等待阶段）时就建立连接并完成认证，但不 Ready、不生成玩家；
-    /// 开局后各端加载完游戏场景再手动 Ready + AddPlayer（见 RoomManager）。
-    /// 所以 autoCreatePlayer 关闭，OnClientConnect 也不调用 base（base 会立即 Ready + AddPlayer）。
-    /// </para>
     /// </summary>
     [DisallowMultipleComponent]
     public class RoomNetworkManager : NetworkManager
     {
-        /// <summary>服务端：是否允许为该连接生成玩家。</summary>
+        /// <summary>
+        /// 服务端：是否允许为该连接生成玩家。
+        /// </summary>
         public delegate bool AddPlayerFilter(NetworkConnectionToClient conn);
 
-        /// <summary>服务端：玩家出生位置和朝向。</summary>
+        /// <summary>
+        /// 服务端：玩家出生位置和朝向。
+        /// </summary>
         public delegate void SpawnPoseResolver(NetworkConnectionToClient conn, out Vector3 position, out Quaternion rotation);
 
-        /// <summary>客户端传输层错误。</summary>
+        /// <summary>
+        /// 客户端传输层错误。
+        /// </summary>
         public delegate void ClientErrorHandler(TransportError error, string reason);
 
         public event Action HostStopped;
 
-        /// <summary>客户端启动（含 Host 的本地客户端），用于注册客户端消息。NetworkClient 每次关闭都会清空消息处理。</summary>
+        /// <summary>
+        /// 客户端启动（含 Host 的本地客户端），用于注册客户端消息。NetworkClient 每次关闭都会清空消息处理。
+        /// </summary>
         public event Action ClientStarted;
 
-        /// <summary>客户端（含 Host 的本地客户端）认证通过。</summary>
+        /// <summary>
+        /// 客户端（含 Host 的本地客户端）认证通过。
+        /// </summary>
         public event Action ClientConnected;
 
-        /// <summary>客户端断开或连接失败。</summary>
+        /// <summary>
+        /// 客户端断开或连接失败。
+        /// </summary>
         public event Action ClientDisconnected;
 
         public event ClientErrorHandler ClientErrored;
 
-        /// <summary>服务端：连接认证通过。</summary>
+        /// <summary>
+        /// 服务端：连接认证通过。
+        /// </summary>
         public event Action<NetworkConnectionToClient> ServerConnected;
 
-        /// <summary>服务端：连接断开（含未通过认证的连接）。</summary>
+        /// <summary>
+        /// 服务端：连接断开（含未通过认证的连接）。
+        /// </summary>
         public event Action<NetworkConnectionToClient> ServerDisconnected;
 
-        /// <summary>服务端：已为该连接生成玩家对象（含中途加入）。</summary>
+        /// <summary>
+        /// 服务端：已为该连接生成玩家对象（含中途加入）。
+        /// </summary>
         public event Action<NetworkConnectionToClient> ServerPlayerSpawned;
 
-        /// <summary>程序退出，Mirror 随后会停止所有连接。</summary>
+        /// <summary>
+        /// 程序退出，Mirror 随后会停止所有连接。
+        /// </summary>
         public event Action ApplicationQuitting;
 
         public AddPlayerFilter CanAddPlayer { get; set; }

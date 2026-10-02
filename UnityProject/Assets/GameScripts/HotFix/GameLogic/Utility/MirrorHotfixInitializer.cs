@@ -8,13 +8,6 @@ namespace GameLogic
 {
     /// <summary>
     /// 补跑 Mirror Weaver 为热更程序集生成的初始化代码。
-    /// <para>
-    /// Weaver 会在每个用到 Mirror 的程序集里生成 <c>Mirror.GeneratedNetworkCode.InitReadWriters</c>，
-    /// 通过 [RuntimeInitializeOnLoadMethod] 注册自定义类型（如 PlayerInputState）的读写器。
-    /// Unity 只在启动时扫描 AOT 程序集，HybridCLR 运行时 Assembly.Load 的热更 DLL 不会被扫描，
-    /// 因此需要在热更入口手动调用一次，否则 Command 参数无法序列化。
-    /// </para>
-    /// Command / ClientRpc 由 NetworkBehaviour 子类的静态构造函数注册，首次使用时自动执行，不受影响。
     /// </summary>
     public static class MirrorHotfixInitializer
     {

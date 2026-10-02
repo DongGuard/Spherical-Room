@@ -9,11 +9,6 @@ namespace GameLogic
 {
     /// <summary>
     /// 大厅窗口流程：主菜单、创建房间、房间窗口之间的切换统一在这里处理。
-    /// <para>
-    /// 进入房间（创建成功 / 加入成功）调 <see cref="ShowRoom"/>；房间关闭（主动离开、房主离开、断线）
-    /// 由 <see cref="RoomManager.RoomClosed"/> 驱动自动回到主菜单，游戏中窗口已关闭时同样生效。
-    /// </para>
-    /// 各窗口只负责自己的显示逻辑，不互相引用。
     /// </summary>
     public class LobbyUIFlow : Singleton<LobbyUIFlow>
     {
@@ -42,7 +37,9 @@ namespace GameLogic
             base.OnRelease();
         }
 
-        /// <summary>回到主菜单（也是热更入口的初始界面）。</summary>
+        /// <summary>
+        /// 回到主菜单（也是热更入口的初始界面）。
+        /// </summary>
         public void ShowMenu()
         {
             GameModule.UI.CloseUI<RoomUI>();
@@ -52,7 +49,9 @@ namespace GameLogic
             GameModule.UI.ShowUIAsync<MenuUI>();
         }
 
-        /// <summary>进入游戏场景后切换到游戏内 HUD。</summary>
+        /// <summary>
+        /// 进入游戏场景后切换到游戏内 HUD。
+        /// </summary>
         public void ShowGame()
         {
             GameModule.UI.CloseUI<RoomUI>();
@@ -71,8 +70,6 @@ namespace GameLogic
 
         /// <summary>
         /// Launcher 场景自带 GameEntry / UIRoot 等启动对象，而启动时的原版实例一直留在
-        /// DontDestroyOnLoad 里；切回该场景会带进一份重复实例（重名对象池异常、双 EventSystem
-        /// 导致 UI 点击失效），这里把场景内的重复启动对象销毁掉。
         /// </summary>
         private static void DestroyDuplicateBootObjects()
         {
@@ -86,7 +83,9 @@ namespace GameLogic
             }
         }
 
-        /// <summary>创建或加入房间成功后进入房间窗口。</summary>
+        /// <summary>
+        /// 创建或加入房间成功后进入房间窗口。
+        /// </summary>
         public void ShowRoom()
         {
             GameModule.UI.CloseUI<CreateRoom>();
@@ -117,10 +116,12 @@ namespace GameLogic
             Log.Info("[LobbyUI] 开始返回主菜单");
 
             // 主动离开：GameUI 已先弹"正在解散/退出房间..."提示，这里不重复；
-            // 被动断线：先弹"正在返回大厅..."再切场景
-            if (!string.IsNullOrEmpty(reason) && SceneManager.GetActiveScene().name != LauncherSceneLocation)
+            // 被动断线：先弹"正在返回大厅..."并等过渡完成，再切场景弹菜单
+            if (!string.IsNullOrEmpty(reason) && !RoomManager.Instance.HostClosedNotified
+                && SceneManager.GetActiveScene().name != LauncherSceneLocation)
             {
                 GameModule.UI.ShowUI<TipsUI>("正在返回大厅...");
+                await UniTask.Delay(200, true);
             }
 
             if (SceneManager.GetActiveScene().name != LauncherSceneLocation)
@@ -138,11 +139,12 @@ namespace GameLogic
             }
 
             ShowMenu();
-            if (!string.IsNullOrEmpty(reason))
+            if (!string.IsNullOrEmpty(reason) && !RoomManager.Instance.HostClosedNotified)
             {
                 GameModule.UI.ShowUI<TipsUI>(reason);
             }
 
+            RoomManager.Instance.HostClosedNotified = false;
             _returning = false;
         }
     }

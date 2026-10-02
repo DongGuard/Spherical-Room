@@ -22,7 +22,9 @@ namespace GameLogic
     {
         Offline,
 
-        /// <summary>正在启动主机，或正在连接 / 认证。</summary>
+        /// <summary>
+        /// 正在启动主机，或正在连接 / 认证。
+        /// </summary>
         Starting,
 
         Host,
@@ -31,27 +33,24 @@ namespace GameLogic
 
     /// <summary>
     /// 联机会话（Mirror 连接生命周期）：创建 NetworkManager、选择传输层、启动 Host / 加入 / 离开、断线处理。
-    /// 只管连接，不含房间规则和玩法；房间流程见 RoomManager。
-    /// <para>
-    /// 传输层：Steam 可用时主机开放 FizzySteamworks（Steam Networking Sockets，经 Steam 中继，全球可连，不用开端口）；
-    /// 编辑器 / Development Build，或 Steam 不可用时，主机额外监听 KCP（UDP 7777 起），用于同一台电脑多开或局域网测试
-    /// （同一个 Steam 账号不能连接自己）。两种同时开放时用 MultiplexTransport 合并，客户端只用其中一种。
-    /// </para>
-    /// <para>
-    /// 场景：不使用 Mirror 的 online / offline 场景，进入游戏时由 RoomManager 通过 TEngine 场景模块（YooAsset）加载。
-    /// </para>
     /// </summary>
     public class SessionManager : Singleton<SessionManager>
     {
         public const ushort DefaultPort = 7777;
 
-        /// <summary>同一台电脑多开时依次尝试的端口数量。</summary>
+        /// <summary>
+        /// 同一台电脑多开时依次尝试的端口数量。
+        /// </summary>
         private const int PortSearchCount = 10;
 
-        /// <summary>网络发送频率与物理步长对齐，每次物理模拟对应一次状态下发。</summary>
+        /// <summary>
+        /// 网络发送频率与物理步长对齐，每次物理模拟对应一次状态下发。
+        /// </summary>
         public const int TickRate = 60;
 
-        /// <summary>加入时等待连接 + 认证的最长时间，传输层自身也有超时，这里兜底。</summary>
+        /// <summary>
+        /// 加入时等待连接 + 认证的最长时间，传输层自身也有超时，这里兜底。
+        /// </summary>
         private const int JoinTimeoutMs = 40000;
 
         public delegate void StateChangedHandler(SessionState state);
@@ -66,7 +65,9 @@ namespace GameLogic
         private FizzySteamworks _steam;
 #endif
 
-        /// <summary>本地正在主动停止网络，期间的断开回调不算异常。</summary>
+        /// <summary>
+        /// 本地正在主动停止网络，期间的断开回调不算异常。
+        /// </summary>
         private bool _stopping;
 
         private bool _quitting;
@@ -74,21 +75,31 @@ namespace GameLogic
         private int _sessionSerial;
         private UniTaskCompletionSource<RoomOpResult> _joinTcs;
 
-        /// <summary>仅服务端：已通过认证的连接（含 Host 本地连接）。</summary>
+        /// <summary>
+        /// 仅服务端：已通过认证的连接（含 Host 本地连接）。
+        /// </summary>
         private readonly HashSet<int> _serverMembers = new HashSet<int>();
 
         public event StateChangedHandler StateChanged;
 
-        /// <summary>已加入房间后会话意外结束（房主离开、网络中断等），参数为可直接展示的原因。主动离开不触发。</summary>
+        /// <summary>
+        /// 已加入房间后会话意外结束（房主离开、网络中断等），参数为可直接展示的原因。主动离开不触发。
+        /// </summary>
         public event Action<string> SessionEnded;
 
-        /// <summary>客户端启动（含 Host），此时注册客户端消息处理。</summary>
+        /// <summary>
+        /// 客户端启动（含 Host），此时注册客户端消息处理。
+        /// </summary>
         public event Action ClientStarted;
 
-        /// <summary>仅服务端：玩家通过认证进入房间（含 Host 自己的本地连接）。</summary>
+        /// <summary>
+        /// 仅服务端：玩家通过认证进入房间（含 Host 自己的本地连接）。
+        /// </summary>
         public event ServerPlayerJoinedHandler ServerPlayerJoined;
 
-        /// <summary>仅服务端：已进入房间的玩家离开。主机自己关闭房间时不触发。</summary>
+        /// <summary>
+        /// 仅服务端：已进入房间的玩家离开。主机自己关闭房间时不触发。
+        /// </summary>
         public event Action<NetworkConnectionToClient> ServerPlayerLeft;
 
         public SessionState State { get; private set; } = SessionState.Offline;
@@ -103,16 +114,24 @@ namespace GameLogic
 
         public RoomAuthenticator Authenticator => _authenticator;
 
-        /// <summary>仅服务端：当前主机是否开放了 Steam 连接。</summary>
+        /// <summary>
+        /// 仅服务端：当前主机是否开放了 Steam 连接。
+        /// </summary>
         public bool HostUsesSteam { get; private set; }
 
-        /// <summary>仅服务端：当前主机是否开放了 KCP 直连。</summary>
+        /// <summary>
+        /// 仅服务端：当前主机是否开放了 KCP 直连。
+        /// </summary>
         public bool HostUsesLan { get; private set; }
 
-        /// <summary>仅服务端：KCP 监听端口，未开放时为 0。</summary>
+        /// <summary>
+        /// 仅服务端：KCP 监听端口，未开放时为 0。
+        /// </summary>
         public ushort LanPort { get; private set; }
 
-        /// <summary>Steam 是否已启动并登录。</summary>
+        /// <summary>
+        /// Steam 是否已启动并登录。
+        /// </summary>
         public static bool SteamAvailable
         {
             get
@@ -127,7 +146,6 @@ namespace GameLogic
 
         /// <summary>
         /// 是否提供 KCP / 局域网入口：编辑器、Development Build，或 Steam 不可用时。
-        /// 正式版有 Steam 时只走 Steam，避免弹防火墙提示和暴露端口。
         /// </summary>
         public static bool LanEnabled => Application.isEditor || Debug.isDebugBuild || !SteamAvailable;
 
@@ -138,7 +156,9 @@ namespace GameLogic
             Application.quitting += OnApplicationQuitting;
         }
 
-        /// <summary>设置玩家预制体（必须带 NetworkIdentity）。必须在启动主机或加入之前设置，且各端一致。</summary>
+        /// <summary>
+        /// 设置玩家预制体（必须带 NetworkIdentity）。必须在启动主机或加入之前设置，且各端一致。
+        /// </summary>
         public void SetPlayerPrefab(GameObject playerPrefab)
         {
             if (playerPrefab != null && playerPrefab.GetComponent<NetworkIdentity>() == null)
@@ -150,7 +170,9 @@ namespace GameLogic
             _manager.playerPrefab = playerPrefab;
         }
 
-        /// <summary>注册运行时 Spawn 的网络预制体（如共享球）。必须在启动主机或加入之前注册，且各端一致。</summary>
+        /// <summary>
+        /// 注册运行时 Spawn 的网络预制体（如共享球）。必须在启动主机或加入之前注册，且各端一致。
+        /// </summary>
         public void RegisterNetworkPrefab(GameObject prefab)
         {
             if (prefab == null || prefab.GetComponent<NetworkIdentity>() == null)
@@ -228,7 +250,9 @@ namespace GameLogic
             return RoomOpResult.Ok();
         }
 
-        /// <summary>通过 KCP 连接局域网 / 本机主机，等待连接和认证完成。</summary>
+        /// <summary>
+        /// 通过 KCP 连接局域网 / 本机主机，等待连接和认证完成。
+        /// </summary>
         public UniTask<RoomOpResult> JoinLanAsync(string address, ushort port, RoomJoinRequestMessage request)
         {
             if (string.IsNullOrWhiteSpace(address) || port == 0)
@@ -241,7 +265,9 @@ namespace GameLogic
         }
 
 #if UNITY_STANDALONE_WIN
-        /// <summary>通过 Steam（FizzySteamworks）连接房主，等待连接和认证完成。</summary>
+        /// <summary>
+        /// 通过 Steam（FizzySteamworks）连接房主，等待连接和认证完成。
+        /// </summary>
         public UniTask<RoomOpResult> JoinSteamAsync(CSteamID host, RoomJoinRequestMessage request)
         {
             if (_steam == null || !SteamManager.Initialized)
@@ -440,7 +466,9 @@ namespace GameLogic
             _serverMembers.Clear();
         }
 
-        /// <summary>找一个空闲的 UDP 端口（同一台电脑开多个主机时 7777 可能已被占用）。</summary>
+        /// <summary>
+        /// 找一个空闲的 UDP 端口（同一台电脑开多个主机时 7777 可能已被占用）。
+        /// </summary>
         private static bool TryFindFreeUdpPort(ushort start, int count, out ushort port)
         {
             for (int i = 0; i < count; i++)
@@ -658,7 +686,6 @@ namespace GameLogic
 
         /// <summary>
         /// Mirror 回调里客户端状态还没清理完（NetworkClient.Shutdown 在 OnClientDisconnect 之后执行），
-        /// 下一帧再通知，等待方可以安全地重新连接。
         /// </summary>
         private static async UniTaskVoid CompleteNextFrameAsync(UniTaskCompletionSource<RoomOpResult> tcs, RoomOpResult result)
         {

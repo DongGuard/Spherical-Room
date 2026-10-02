@@ -32,7 +32,9 @@ namespace GameLogic
         }
         #endregion
 
-        /// <summary>列表条目（RoomItem.prefab 实例）。</summary>
+        /// <summary>
+        /// 列表条目（RoomItem.prefab 实例）。
+        /// </summary>
         private sealed class RoomItem
         {
             public RoomListEntry Entry;
@@ -41,10 +43,14 @@ namespace GameLogic
             public Color NormalColor;
         }
 
-        /// <summary>房间条目预制体地址。不能叫 Room：与游戏场景的资源地址冲突。</summary>
+        /// <summary>
+        /// 房间条目预制体地址。不能叫 Room：与游戏场景的资源地址冲突。
+        /// </summary>
         private const string RoomItemLocation = "RoomItem";
 
-        /// <summary>选中态高亮色。</summary>
+        /// <summary>
+        /// 选中态高亮色。
+        /// </summary>
         private static readonly Color SelectedColor = new Color(1f, 0.8f, 0.35f);
 
         private const float TipDuration = 3f;
@@ -60,13 +66,17 @@ namespace GameLogic
 
         private bool _joining;
 
-        /// <summary>等待玩家输入密码的任务，非空表示密码面板正在等待提交。</summary>
+        /// <summary>
+        /// 等待玩家输入密码的任务，非空表示密码面板正在等待提交。
+        /// </summary>
         private UniTaskCompletionSource<string> _passwordTcs;
 
         private TMP_Text _textTip;
         private float _tipHideAt;
 
-        /// <summary>大厅打开期间的列表刷新间隔（秒），让后创建的房间也能被发现。</summary>
+        /// <summary>
+        /// 大厅打开期间的列表刷新间隔（秒），让后创建的房间也能被发现。
+        /// </summary>
         private const float ListRefreshInterval = 3f;
         private float _nextListRefresh;
 
@@ -276,7 +286,9 @@ namespace GameLogic
             JoinAsync(_selectedEntry).Forget();
         }
 
-        /// <summary>退出：取消密码等待并回到主菜单。</summary>
+        /// <summary>
+        /// 退出：取消密码等待并回到主菜单。
+        /// </summary>
         private void OnClickExitBtn()
         {
             LobbyUIFlow.Instance.ShowMenu();
@@ -305,7 +317,9 @@ namespace GameLogic
             }
         }
 
-        /// <summary>RoomManager 的密码回调：弹出 m_rectEnterPass 并等待玩家提交。</summary>
+        /// <summary>
+        /// RoomManager 的密码回调：弹出 m_rectEnterPass 并等待玩家提交。
+        /// </summary>
         private async UniTask<string> PromptPasswordAsync(string roomName)
         {
             _passwordTcs = new UniTaskCompletionSource<string>();
@@ -360,7 +374,9 @@ namespace GameLogic
 
         #region 提示
 
-        /// <summary>克隆标题文本作为底部提示条（预制体没有现成的提示节点）。</summary>
+        /// <summary>
+        /// 克隆标题文本作为底部提示条（预制体没有现成的提示节点）。
+        /// </summary>
         private void CreateTip()
         {
             Transform title = FindChild("Back/Text (TMP)");

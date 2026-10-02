@@ -9,11 +9,6 @@ namespace GameLogic
 {
     /// <summary>
     /// 局域网房间发现（UDP 广播）。只在开发版或 Steam 不可用时使用，正式联机走 Steam 大厅。
-    /// <para>
-    /// 主机监听 <see cref="DiscoveryPort"/> 回应查询；搜索方向广播地址和本机回环地址发查询并收集回应，
-    /// 所以同一台电脑上的编辑器和打包程序也能互相看到。
-    /// </para>
-    /// 不开线程：由 RoomManager 每帧调用 <see cref="Poll"/> 在主线程非阻塞收发。
     /// </summary>
     public sealed class LanRoomDiscovery : IDisposable
     {
@@ -24,16 +19,19 @@ namespace GameLogic
         private const char Separator = '|';
         private const int FieldCount = 10;
 
-        /// <summary>搜索期间重发查询的间隔（UDP 可能丢包）。</summary>
+        /// <summary>
+        /// 搜索期间重发查询的间隔（UDP 可能丢包）。
+        /// </summary>
         private const float QueryInterval = 0.5f;
 
         /// <summary>
         /// SIO_UDP_CONNRESET：Windows 上向没有监听的端口发 UDP 会收到 ICMP 端口不可达，
-        /// 之后 Receive 会抛 10054 异常，关闭这个行为。
         /// </summary>
         private const int SioUdpConnReset = -1744830452;
 
-        /// <summary>主机：生成当前房间的广播信息，返回 null 表示当前不对外公开（满员、不可加入等）。</summary>
+        /// <summary>
+        /// 主机：生成当前房间的广播信息，返回 null 表示当前不对外公开（满员、不可加入等）。
+        /// </summary>
         public delegate RoomListEntry AdvertisementProvider();
 
         private UdpClient _server;
@@ -46,14 +44,18 @@ namespace GameLogic
         private readonly List<RoomListEntry> _results = new List<RoomListEntry>();
         private readonly byte[] _queryBytes = Encoding.UTF8.GetBytes(QueryMessage);
 
-        /// <summary>搜索结果变化（发现新房间、搜索开始或结束）。</summary>
+        /// <summary>
+        /// 搜索结果变化（发现新房间、搜索开始或结束）。
+        /// </summary>
         public event Action ResultsChanged;
 
         public bool IsAdvertising => _server != null;
 
         public bool IsSearching => _client != null;
 
-        /// <summary>最近一次搜索到的房间。</summary>
+        /// <summary>
+        /// 最近一次搜索到的房间。
+        /// </summary>
         public IReadOnlyList<RoomListEntry> Results => _results;
 
         #region 主机
@@ -96,7 +98,9 @@ namespace GameLogic
 
         #region 搜索
 
-        /// <summary>开始搜索，持续 <paramref name="duration"/> 秒，结果通过 <see cref="ResultsChanged"/> 通知。</summary>
+        /// <summary>
+        /// 开始搜索，持续 <paramref name="duration"/> 秒，结果通过 <see cref="ResultsChanged"/> 通知。
+        /// </summary>
         public void StartSearch(float duration)
         {
             if (_client != null)
@@ -136,7 +140,9 @@ namespace GameLogic
 
         #endregion
 
-        /// <summary>每帧调用：主机回应查询，搜索方收集回应。</summary>
+        /// <summary>
+        /// 每帧调用：主机回应查询，搜索方收集回应。
+        /// </summary>
         public void Poll()
         {
             if (_server != null)
@@ -244,7 +250,9 @@ namespace GameLogic
             }
         }
 
-        /// <summary>同一房间可能经广播和回环各回应一次，按 RoomId 合并（保留先收到的地址）。</summary>
+        /// <summary>
+        /// 同一房间可能经广播和回环各回应一次，按 RoomId 合并（保留先收到的地址）。
+        /// </summary>
         private bool AddOrUpdate(RoomListEntry entry)
         {
             for (int i = 0; i < _results.Count; i++)

@@ -4,7 +4,6 @@ namespace GameLogic
 {
     /// <summary>
     /// 相机管理：在场景相机和本地玩家的眼睛相机之间切换，并计算第一人称视角（Yaw / Pitch）。
-    /// 每个玩家预制体自带眼睛相机，只有本地玩家的会被启用。
     /// </summary>
     public class CameraManager : SingletonBehaviour<CameraManager>
     {
@@ -16,18 +15,21 @@ namespace GameLogic
 
         private const string MainCameraTag = "MainCamera";
 
-        /// <summary>当前使用的本地玩家眼睛相机。</summary>
+        /// <summary>
+        /// 当前使用的本地玩家眼睛相机。
+        /// </summary>
         private Camera _camera;
         private AudioListener _eyeListener;
         private string _eyeOriginalTag;
 
-        /// <summary>被临时关闭的场景相机（菜单 / 观察用），Detach 时恢复。</summary>
+        /// <summary>
+        /// 被临时关闭的场景相机（菜单 / 观察用），Detach 时恢复。
+        /// </summary>
         private Camera _sceneCamera;
         private AudioListener _sceneListener;
 
         /// <summary>
         /// 本机玩家模型所在层。眼睛相机剔除该层，其他相机（Scene 视图等）照常渲染。
-        /// 未在 Tags and Layers 中命名时回退到第 31 层（未命名的层也可以使用）。
         /// </summary>
         private const string LocalPlayerLayerName = "LocalPlayer";
         private const int FallbackLocalPlayerLayer = 31;
@@ -37,20 +39,25 @@ namespace GameLogic
         private int[] _originalLayers;
         private int _eyeOriginalCullingMask;
 
-        /// <summary>水平朝向（度）。</summary>
+        /// <summary>
+        /// 水平朝向（度）。
+        /// </summary>
         public float Yaw { get; private set; }
 
-        /// <summary>俯仰角（度），向下为正。</summary>
+        /// <summary>
+        /// 俯仰角（度），向下为正。
+        /// </summary>
         public float Pitch { get; private set; }
 
-        /// <summary>是否已挂载到本地玩家。</summary>
+        /// <summary>
+        /// 是否已挂载到本地玩家。
+        /// </summary>
         public bool IsAttached => _camera != null;
 
         public Camera Camera => _camera;
 
         /// <summary>
         /// 切换到本地玩家自带的眼睛相机：关闭场景相机，启用眼睛相机和 AudioListener，
-        /// 并让眼睛相机不渲染本地玩家模型（第一人称不挡视线，其他相机仍可见）。
         /// </summary>
         /// <param name="eyeCamera">玩家预制体上的眼睛相机（预制体中默认关闭）。</param>
         /// <param name="initialYaw">出生朝向。</param>
@@ -103,7 +110,6 @@ namespace GameLogic
 
         /// <summary>
         /// 退出第一人称：关闭眼睛相机，恢复场景相机。玩家销毁前调用。
-        /// 眼睛相机已随玩家销毁时，Unity 的 null 判断会跳过对应步骤。
         /// </summary>
         public void Detach()
         {
@@ -166,8 +172,6 @@ namespace GameLogic
 
         /// <summary>
         /// 只对眼睛相机隐藏本机模型：把模型移到 LocalPlayer 层，并从眼睛相机的 cullingMask 中去掉该层。
-        /// 模型本身仍正常渲染，Scene 视图和其他相机都能看到；
-        /// 其他玩家的模型不受影响（每台机器只处理自己的本地玩家）。
         /// </summary>
         private void HideFromEye(GameObject modelRoot)
         {

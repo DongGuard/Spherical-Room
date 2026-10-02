@@ -26,6 +26,13 @@ namespace GameLogic
         {
             _btnExit.onClick.AddListener(OnClickExitBtn);
             RefreshRoleText();
+
+            // Back 是全屏视觉边框，不参与射线检测，否则会挡住"点击画面重新锁定光标"
+            Image backImage = FindChildComponent<Image>("Back");
+            if (backImage != null)
+            {
+                backImage.raycastTarget = false;
+            }
         }
 
         protected override void OnRefresh()

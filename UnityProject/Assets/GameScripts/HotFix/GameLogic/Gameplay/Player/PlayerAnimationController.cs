@@ -4,33 +4,27 @@ namespace GameLogic
 {
     /// <summary>
     /// 玩家动画状态。
-    /// <para>新增动画：在 PlayerAnimator.controller 的 Base Layer 里加同名状态（不连过渡线），
-    /// 在这里加枚举值，再在 <see cref="PlayerAnimationController"/> 里补上状态名和切换条件。</para>
     /// </summary>
     public enum PlayerAnimState
     {
-        /// <summary>地面移动：待机 / 走 / 跑混合树，由 Speed 参数驱动。</summary>
+        /// <summary>
+        /// 地面移动：待机 / 走 / 跑混合树，由 Speed 参数驱动。
+        /// </summary>
         Locomotion,
 
-        /// <summary>起跳上升段。</summary>
+        /// <summary>
+        /// 起跳上升段。
+        /// </summary>
         Jump,
 
-        /// <summary>下落：跳跃的下落段，或从高处走下。</summary>
+        /// <summary>
+        /// 下落：跳跃的下落段，或从高处走下。
+        /// </summary>
         Fall
     }
 
     /// <summary>
     /// 玩家动画统一管理：Animator 的参数和状态切换只在这里处理，其他脚本不直接操作 Animator。
-    /// <para>
-    /// 播放哪个状态由本脚本根据玩家的实际运动决定，用 CrossFade 切换。
-    /// PlayerAnimator.controller 只提供状态和混合树，状态之间不连过渡线，避免脚本和过渡线同时决定状态。
-    /// </para>
-    /// <para>
-    /// 各端的玩家位置都来自主机，所以每端在本地推导动画即可，不需要额外同步，动画也始终和看到的位置一致：
-    /// 服务端（含 Host）由 PlayerController 每个物理步上报 CharacterController 的实际速度；
-    /// 纯客户端的位置由 NetworkTransform 每帧插值，直接按帧差分估算速度。
-    /// </para>
-    /// 挂在 Model 子节点上（与 Animator 同一物体）。
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(Animator))]
@@ -80,7 +74,9 @@ namespace GameLogic
         private int _jumpState;
         private int _fallState;
 
-        /// <summary>Animator 当前所在（或正在过渡到）的状态，0 表示需要重新读取。</summary>
+        /// <summary>
+        /// Animator 当前所在（或正在过渡到）的状态，0 表示需要重新读取。
+        /// </summary>
         private int _playingState;
 
         private bool _hasSimulatedVelocity;
@@ -90,19 +86,23 @@ namespace GameLogic
         private Vector3 _velocity;
         private float _airTime;
 
-        /// <summary>当前动画状态。</summary>
+        /// <summary>
+        /// 当前动画状态。
+        /// </summary>
         public PlayerAnimState State { get; private set; }
 
-        /// <summary>平滑后的水平速度（米/秒），即写入 Speed 参数的值。</summary>
+        /// <summary>
+        /// 平滑后的水平速度（米/秒），即写入 Speed 参数的值。
+        /// </summary>
         public float Speed { get; private set; }
 
-        /// <summary>脚下是否检测到地面（不含离地宽限时间）。</summary>
+        /// <summary>
+        /// 脚下是否检测到地面（不含离地宽限时间）。
+        /// </summary>
         public bool IsGrounded { get; private set; } = true;
 
         /// <summary>
         /// 服务端每个物理步由 PlayerController 调用，上报 CharacterController 的实际速度（撞墙时为 0）。
-        /// 服务端的位置只在物理步更新，按渲染帧差分时有的帧位移为 0、有的帧是一整步，帧率越高偏差越大，
-        /// 所以上报过之后改用这里的速度，不再按位置估算。
         /// </summary>
         public void ReportSimulatedVelocity(Vector3 velocity)
         {
@@ -261,7 +261,9 @@ namespace GameLogic
             _playingState = target;
         }
 
-        /// <summary>控制器里缺少的状态退回到已有状态：缺 Jump 用 Fall，缺 Fall 用 Locomotion。</summary>
+        /// <summary>
+        /// 控制器里缺少的状态退回到已有状态：缺 Jump 用 Fall，缺 Fall 用 Locomotion。
+        /// </summary>
         private int ResolveState(PlayerAnimState state)
         {
             if (state == PlayerAnimState.Jump && _jumpState != 0)
@@ -277,7 +279,9 @@ namespace GameLogic
             return _locomotionState;
         }
 
-        /// <summary>Animator 就绪后检查一次控制器提供了哪些参数和状态，缺失时提示一次。</summary>
+        /// <summary>
+        /// Animator 就绪后检查一次控制器提供了哪些参数和状态，缺失时提示一次。
+        /// </summary>
         private bool EnsureResolved()
         {
             if (_resolved)
