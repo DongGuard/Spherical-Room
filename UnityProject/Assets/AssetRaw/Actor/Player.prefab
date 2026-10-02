@@ -131,7 +131,7 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   walkSpeed: 10
-  sprintSpeed: 5.5
+  sprintSpeed: 18
   acceleration: 25
   jumpHeight: 1.2
   gravity: -20

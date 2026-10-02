@@ -111,24 +111,50 @@ namespace GameLogic
             base.OnServerDisconnect(conn);
         }
 
+        public override void OnServerReady(NetworkConnectionToClient conn)
+        {
+            // 中途加入时，客户端加载完场景才会 Ready。这里直接生成玩家，
+            // 避免只标记就绪却没有本地角色，客户端一直停在场景相机上。
+            if (conn.identity == null)
+            {
+                TrySpawnPlayer(conn);
+            }
+
+            if (!conn.isReady)
+            {
+                base.OnServerReady(conn);
+            }
+        }
+
         public override void OnServerAddPlayer(NetworkConnectionToClient conn)
         {
             if (conn.identity != null)
             {
-                Debug.LogWarning($"[RoomNetworkManager] 连接 {conn.connectionId} 已有玩家对象");
+                // 场景切换可能把客户端上的玩家销毁了，服务器上还在。把出生包再发一次。
+                ResendPlayerSpawn(conn);
                 return;
+            }
+
+            TrySpawnPlayer(conn);
+        }
+
+        private bool TrySpawnPlayer(NetworkConnectionToClient conn)
+        {
+            if (conn == null || conn.identity != null)
+            {
+                return conn != null && conn.identity != null;
             }
 
             if (playerPrefab == null)
             {
                 Debug.LogError("[RoomNetworkManager] 未设置玩家预制体");
-                return;
+                return false;
             }
 
             if (CanAddPlayer != null && !CanAddPlayer(conn))
             {
                 Debug.LogWarning($"[RoomNetworkManager] 连接 {conn.connectionId} 当前不能生成玩家（游戏未开始或不在房间中）");
-                return;
+                return false;
             }
 
             Vector3 position = Vector3.up;
@@ -140,8 +166,31 @@ namespace GameLogic
 
             GameObject player = Instantiate(playerPrefab, position, rotation);
             player.name = $"{playerPrefab.name} [connId={conn.connectionId}]";
-            NetworkServer.AddPlayerForConnection(conn, player);
+            if (!NetworkServer.AddPlayerForConnection(conn, player))
+            {
+                Destroy(player);
+                return false;
+            }
+
             ServerPlayerSpawned?.Invoke(conn);
+            return true;
+        }
+
+        /// <summary>
+        /// 客户端没拿到本地玩家时，把已有玩家再同步一次，而不是再生成一个。
+        /// </summary>
+        private static void ResendPlayerSpawn(NetworkConnectionToClient conn)
+        {
+            NetworkIdentity identity = conn.identity;
+            if (identity == null)
+            {
+                return;
+            }
+
+            identity.observers.Remove(conn.connectionId);
+            conn.observing.Remove(identity);
+            NetworkServer.RebuildObservers(identity, true);
+            Debug.Log($"[RoomNetworkManager] 已向连接 {conn.connectionId} 重发玩家 {identity.name}");
         }
 
         public override void OnApplicationQuit()

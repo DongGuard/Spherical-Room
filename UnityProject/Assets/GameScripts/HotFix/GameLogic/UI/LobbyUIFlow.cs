@@ -22,6 +22,7 @@ namespace GameLogic
             RoomManager.Instance.RoomClosed += OnRoomClosed;
             RoomManager.Instance.GameLoading += OnGameLoading;
             RoomManager.Instance.GameEntered += OnGameEntered;
+            RoomManager.Instance.InviteReceived += OnInviteReceived;
         }
 
         protected override void OnRelease()
@@ -32,6 +33,7 @@ namespace GameLogic
                 manager.RoomClosed -= OnRoomClosed;
                 manager.GameLoading -= OnGameLoading;
                 manager.GameEntered -= OnGameEntered;
+                manager.InviteReceived -= OnInviteReceived;
             }
 
             base.OnRelease();
@@ -54,6 +56,9 @@ namespace GameLogic
         /// </summary>
         public void ShowGame()
         {
+            GameModule.UI.CloseUI<MenuUI>();
+            GameModule.UI.CloseUI<CreateRoom>();
+            GameModule.UI.CloseUI<JoinUI>();
             GameModule.UI.CloseUI<RoomUI>();
             GameModule.UI.ShowUI<GameUI>();
         }
@@ -66,6 +71,11 @@ namespace GameLogic
         private void OnGameLoading()
         {
             GameModule.UI.ShowUI<TipsUI>("正在进入游戏...");
+        }
+
+        private void OnInviteReceived(string message)
+        {
+            GameModule.UI.ShowUI<InvitationUI>(message);
         }
 
         /// <summary>
@@ -88,6 +98,11 @@ namespace GameLogic
         /// </summary>
         public void ShowRoom()
         {
+            if (RoomManager.IsValid && (RoomManager.Instance.InGame || RoomManager.Instance.IsLoadingGame))
+            {
+                return;
+            }
+
             GameModule.UI.CloseUI<CreateRoom>();
             GameModule.UI.CloseUI<JoinUI>();
             GameModule.UI.CloseUI<MenuUI>();
@@ -121,7 +136,7 @@ namespace GameLogic
                 && SceneManager.GetActiveScene().name != LauncherSceneLocation)
             {
                 GameModule.UI.ShowUI<TipsUI>("正在返回大厅...");
-                await UniTask.Delay(200, true);
+                await TipsUI.WaitShownAsync();
             }
 
             if (SceneManager.GetActiveScene().name != LauncherSceneLocation)

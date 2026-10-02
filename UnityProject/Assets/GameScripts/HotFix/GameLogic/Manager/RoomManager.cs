@@ -241,7 +241,7 @@ namespace GameLogic
             // 游戏未运行时接受了 Steam 邀请
             if (SteamLobby.Instance.Available && SteamLobby.TryGetCommandLineLobby(out CSteamID lobby))
             {
-                OnSteamJoinRequested(lobby);
+                OnSteamJoinRequested(lobby, CSteamID.Nil);
             }
 #endif
         }
@@ -597,7 +597,7 @@ namespace GameLogic
         }
 
 #if UNITY_STANDALONE_WIN
-        private void OnSteamJoinRequested(CSteamID lobby)
+        private void OnSteamJoinRequested(CSteamID lobby, CSteamID inviter)
         {
             if (IsInRoom && SteamLobby.Instance.CurrentLobby == lobby)
             {
@@ -613,11 +613,25 @@ namespace GameLogic
             if (IsInRoom || _session.State != SessionState.Offline)
             {
                 _pendingInvite = lobby;
-                InviteReceived?.Invoke("收到好友的房间邀请，是否离开当前房间并加入？");
+                InviteReceived?.Invoke($"{ResolveInviterName(inviter)} 邀请你加入房间，是否离开当前房间并加入？");
                 return;
             }
 
             JoinInviteAsync(lobby).Forget();
+        }
+
+        private static string ResolveInviterName(CSteamID inviter)
+        {
+            if (inviter.IsValid() && SteamManager.Initialized)
+            {
+                string name = RoomProtocol.Sanitize(SteamFriends.GetPersonaName(inviter), RoomProtocol.MaxNameLength);
+                if (name.Length > 0)
+                {
+                    return name;
+                }
+            }
+
+            return "好友";
         }
 
         private async UniTask<RoomOpResult> JoinInviteAsync(CSteamID lobby)
@@ -870,7 +884,12 @@ namespace GameLogic
             _serverPhase = RoomPhase.Playing;
             PublishRoomState();
             RequestLocalPlayer();
-            await WaitLocalPlayerReadyAsync();
+            if (!await WaitLocalPlayerReadyAsync())
+            {
+                RequestLocalPlayer();
+                await WaitLocalPlayerReadyAsync();
+            }
+
             if (serial != _roomSerial || !_session.IsHost)
             {
                 return RoomOpResult.Fail("房间已关闭");
@@ -1081,11 +1100,14 @@ namespace GameLogic
             int serial = _roomSerial;
             _loadingGame = true;
             GameLoading?.Invoke();
+            Log.Info("[Room][诊断] 中途加入：开始加载游戏场景");
 
             bool loaded = await LoadGameSceneAsync();
+            Log.Info($"[Room][诊断] 场景加载结果: {loaded}");
             if (serial != _roomSerial || !_session.IsClient)
             {
                 // 加载期间已离开房间
+                Log.Warning($"[Room][诊断] 加载期间状态变化，中止（serial={serial != _roomSerial} isClient={_session.IsClient}）");
                 return;
             }
 
@@ -1097,11 +1119,36 @@ namespace GameLogic
                 return;
             }
 
-            RequestLocalPlayer();
-            await WaitLocalPlayerReadyAsync();
+            // 等上一场景的销毁结束，再接收网络对象，避免玩家生在即将卸载的场景里
+            await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
             if (serial != _roomSerial || !_session.IsClient)
             {
                 return;
+            }
+
+            if (NetworkClient.active)
+            {
+                NetworkClient.PrepareToSpawnSceneObjects();
+            }
+
+            RequestLocalPlayer();
+            if (!await WaitLocalPlayerReadyAsync())
+            {
+                Log.Warning("[Room][诊断] 本地玩家尚未生成，重新请求");
+                RequestLocalPlayer();
+                await WaitLocalPlayerReadyAsync();
+            }
+
+            Log.Info($"[Room][诊断] 本地玩家状态: {(NetworkClient.localPlayer != null ? "已生成" : "未生成")}");
+
+            if (serial != _roomSerial || !_session.IsClient)
+            {
+                return;
+            }
+
+            if (NetworkClient.localPlayer == null)
+            {
+                Log.Error("[Room] 进入游戏后仍没有本地玩家，无法控制角色和视角");
             }
 
             _inGame = true;
@@ -1112,7 +1159,7 @@ namespace GameLogic
         /// <summary>
         /// 等待本地玩家生成到位并稍作稳定，再通知进入游戏关闭房间 UI，避免视觉穿帮。
         /// </summary>
-        private static async UniTask WaitLocalPlayerReadyAsync()
+        private static async UniTask<bool> WaitLocalPlayerReadyAsync()
         {
             // 客户端要等服务器生成玩家并同步回来；超时兜底，期间断线由外层的序号检查处理
             float deadline = Time.unscaledTime + 10f;
@@ -1121,13 +1168,21 @@ namespace GameLogic
                 await UniTask.Yield();
             }
 
+            if (NetworkClient.localPlayer == null)
+            {
+                Log.Warning("[Room][诊断] 等待本地玩家生成超时（10 秒）");
+                return false;
+            }
+
             await UniTask.Delay(300, true);
+            return NetworkClient.localPlayer != null;
         }
 
         private static async UniTask<bool> LoadGameSceneAsync()
         {
             // 离开房间后会留在游戏场景里显示菜单，再次开局时不重新加载（球和玩家都是网络对象，断开时已销毁）
-            if (SceneManager.GetActiveScene().name == GameSceneName)
+            Scene active = SceneManager.GetActiveScene();
+            if (active.name == GameSceneName && active.isLoaded)
             {
                 return true;
             }
@@ -1135,7 +1190,17 @@ namespace GameLogic
             try
             {
                 Scene scene = await GameModule.Scene.LoadSceneAsync(GameSceneLocation);
-                return scene.IsValid() && scene.isLoaded;
+                if (!scene.IsValid() || !scene.isLoaded)
+                {
+                    return false;
+                }
+
+                if (SceneManager.GetActiveScene() != scene)
+                {
+                    SceneManager.SetActiveScene(scene);
+                }
+
+                return true;
             }
             catch (Exception e)
             {

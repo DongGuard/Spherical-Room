@@ -307,6 +307,14 @@ namespace GameLogic
 
             if (result.Success)
             {
+                // 中途加入已开局的房间：跳过房间窗口，直接进游戏（GameEntered 时自动打开游戏 HUD）
+                RoomInfo room = RoomManager.Instance.Room;
+                if (room != null && room.Phase == RoomPhase.Playing)
+                {
+                    GameModule.UI.CloseUI<JoinUI>();
+                    return;
+                }
+
                 LobbyUIFlow.Instance.ShowRoom();
                 return;
             }

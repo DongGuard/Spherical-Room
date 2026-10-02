@@ -76,7 +76,7 @@ namespace GameLogic
         private const int RequestTimeoutMs = 15000;
         private const int MaxListResults = 50;
 
-        public delegate void JoinRequestHandler(CSteamID lobby);
+        public delegate void JoinRequestHandler(CSteamID lobby, CSteamID inviter);
 
         private Callback<GameLobbyJoinRequested_t> _joinRequested;
         private CallResult<LobbyCreated_t> _lobbyCreated;
@@ -471,7 +471,7 @@ namespace GameLogic
         private void OnJoinRequested(GameLobbyJoinRequested_t data)
         {
             Debug.Log($"[SteamLobby] 收到加入请求 {data.m_steamIDLobby}");
-            JoinRequested?.Invoke(data.m_steamIDLobby);
+            JoinRequested?.Invoke(data.m_steamIDLobby, data.m_steamIDFriend);
         }
 
         #endregion

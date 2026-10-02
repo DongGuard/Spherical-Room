@@ -58,8 +58,9 @@ namespace GameLogic
 
         private async UniTaskVoid ExitAsync()
         {
-            // 等 Tips 滑入动画播完（完全显示）后再执行解散/退出，避免玩家消失、菜单弹出抢在提示之前
-            await UniTask.Delay(200, true);
+            // 等 Tips 背景完全淡入罩住画面（动画完成回调，非计时）后再执行解散/退出，
+            // 玩家消失、场景切换、菜单弹出都发生在遮罩完全显示之后
+            await TipsUI.WaitShownAsync();
             RoomManager.Instance.LeaveRoom();
         }
     }
