@@ -42,6 +42,12 @@ namespace GameLogic
         private float _nextQuery;
 
         private readonly List<RoomListEntry> _results = new List<RoomListEntry>();
+
+        /// <summary>每个房间最后收到广播的时间，超过 EntryTimeout 没更新就从结果剔除（主机已解散）。</summary>
+        private readonly Dictionary<string, float> _lastSeen = new Dictionary<string, float>();
+
+        /// <summary>广播每 0.5 秒一次，3 秒没收到视为房间已关闭。</summary>
+        private const float EntryTimeout = 3f;
         private readonly byte[] _queryBytes = Encoding.UTF8.GetBytes(QueryMessage);
 
         /// <summary>
@@ -211,7 +217,8 @@ namespace GameLogic
                 SendQuery(IPAddress.Loopback);
             }
 
-            bool changed = false;
+            // 主机解散后不再广播（收不到任何包），剔除必须每帧独立执行
+            bool changed = ExpireStale(now);
             try
             {
                 while (_client != null && _client.Available > 0)
@@ -219,7 +226,7 @@ namespace GameLogic
                     IPEndPoint remote = null;
                     byte[] data = _client.Receive(ref remote);
                     RoomListEntry entry = Parse(data, remote);
-                    if (entry != null && AddOrUpdate(entry))
+                    if (entry != null && AddOrUpdate(entry, now))
                     {
                         changed = true;
                     }
@@ -253,8 +260,10 @@ namespace GameLogic
         /// <summary>
         /// 同一房间可能经广播和回环各回应一次，按 RoomId 合并（保留先收到的地址）。
         /// </summary>
-        private bool AddOrUpdate(RoomListEntry entry)
+        private bool AddOrUpdate(RoomListEntry entry, float now)
         {
+            _lastSeen[entry.RoomId] = now;
+
             for (int i = 0; i < _results.Count; i++)
             {
                 RoomListEntry existing = _results[i];
@@ -273,6 +282,23 @@ namespace GameLogic
 
             _results.Add(entry);
             return true;
+        }
+
+        /// <summary>剔除超时没再广播的房间（主机解散/离线），有剔除返回 true。</summary>
+        private bool ExpireStale(float now)
+        {
+            bool removed = false;
+            for (int i = _results.Count - 1; i >= 0; i--)
+            {
+                if (now - _lastSeen[_results[i].RoomId] > EntryTimeout)
+                {
+                    _lastSeen.Remove(_results[i].RoomId);
+                    _results.RemoveAt(i);
+                    removed = true;
+                }
+            }
+
+            return removed;
         }
 
         private void CloseClient()

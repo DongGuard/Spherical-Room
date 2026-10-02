@@ -624,7 +624,7 @@ namespace GameLogic
         {
             if (inviter.IsValid() && SteamManager.Initialized)
             {
-                string name = RoomProtocol.Sanitize(SteamFriends.GetPersonaName(inviter), RoomProtocol.MaxNameLength);
+                string name = RoomProtocol.Sanitize(SteamFriends.GetFriendPersonaName(inviter), RoomProtocol.MaxNameLength);
                 if (name.Length > 0)
                 {
                     return name;

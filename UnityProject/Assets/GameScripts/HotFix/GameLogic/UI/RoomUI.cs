@@ -36,6 +36,8 @@ namespace GameLogic
         private Toggle _toggleJob;
         private TMP_Text _mtmp_textPassValue;
         private Button _btnCreate;
+        private Button _btnDissolve;
+        private TMP_Text _mtmp_textDissolve;
         protected override void ScriptGenerator()
         {
             _rectPlayers = FindChildComponent<RectTransform>("Back/m_rectPlayers");
@@ -46,6 +48,8 @@ namespace GameLogic
             _toggleJob = FindChildComponent<Toggle>("Back/m_toggleJob");
             _mtmp_textPassValue = FindChildComponent<TMP_Text>("Back/mtmp_textPassValue");
             _btnCreate = FindChildComponent<Button>("Back/m_btnCreate");
+            _btnDissolve = FindChildComponent<Button>("Back/m_btnDissolve");
+            _mtmp_textDissolve = FindChildComponent<TMP_Text>("Back/m_btnDissolve/Text (TMP)");
         }
         #endregion
 
@@ -56,6 +60,7 @@ namespace GameLogic
         protected override void OnCreate()
         {
             _btnCreate.onClick.AddListener(OnClickCreateBtn);
+            _btnDissolve.onClick.AddListener(OnClickDissolveBtn);
             _toggleJob.onValueChanged.AddListener(OnToggleJobChange);
             BuildSlots();
 
@@ -69,6 +74,7 @@ namespace GameLogic
         protected override void OnDestroy()
         {
             _btnCreate.onClick.RemoveListener(OnClickCreateBtn);
+            _btnDissolve.onClick.RemoveListener(OnClickDissolveBtn);
             _toggleJob.onValueChanged.RemoveListener(OnToggleJobChange);
             if (RoomManager.IsValid)
             {
@@ -199,6 +205,7 @@ namespace GameLogic
 
             _btnCreate.gameObject.SetActive(isHost);
             _btnCreate.interactable = waiting && !_starting;
+            _mtmp_textDissolve.text = isHost ? "解散房间" : "离开房间";
         }
 
         #endregion
@@ -211,6 +218,21 @@ namespace GameLogic
             {
                 RoomManager.Instance.SetAllowMidJoin(isOn);
             }
+        }
+
+        private void OnClickDissolveBtn()
+        {
+            bool isHost = RoomManager.Instance.IsHost;
+            _btnDissolve.interactable = false;
+            GameModule.UI.ShowUI<TipsUI>(isHost ? "正在解散房间..." : "正在离开房间...");
+            DissolveAsync(isHost).Forget();
+        }
+
+        private async UniTaskVoid DissolveAsync(bool isHost)
+        {
+            // 等 Tips 背景完全罩住画面（动画完成回调，非计时）后再执行解散/离开
+            await TipsUI.WaitShownAsync();
+            RoomManager.Instance.LeaveRoom();
         }
 
         private void OnClickCreateBtn()

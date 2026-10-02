@@ -71,6 +71,11 @@ namespace GameLogic
         /// </summary>
         private UniTaskCompletionSource<string> _passwordTcs;
 
+        /// <summary>
+        /// 正在输入密码加入的房间 ID，用于检测该房间是否已解散。
+        /// </summary>
+        private string _passwordRoomId;
+
         private TMP_Text _textTip;
         private float _tipHideAt;
 
@@ -113,8 +118,16 @@ namespace GameLogic
                 _textTip.gameObject.SetActive(false);
             }
 
-            // 周期刷新：先开大厅、后建的房间也要能出现在列表里
-            if (!_joining && Time.unscaledTime >= _nextListRefresh)
+            // 密码面板等待输入时按 Esc 取消加入
+            if (_passwordTcs != null && Input.GetKeyDown(KeyCode.Escape))
+            {
+                HidePasswordPanel();
+                return;
+            }
+
+            // 周期刷新：先开大厅、后建的房间也要能出现在列表里。
+            // 等待密码输入（_passwordTcs 非空）期间也要刷新：房主解散后才能自动关闭密码面板
+            if ((!_joining || _passwordTcs != null) && Time.unscaledTime >= _nextListRefresh)
             {
                 _nextListRefresh = Time.unscaledTime + ListRefreshInterval;
                 RoomManager.Instance.RefreshRoomList();
@@ -221,11 +234,32 @@ namespace GameLogic
                 }
             }
 
+            // 正在输入密码的房间已解散（从列表消失）：关闭面板、取消加入并提示
+            if (_passwordTcs != null && !string.IsNullOrEmpty(_passwordRoomId) && FindItemRoom(_passwordRoomId) < 0)
+            {
+                HidePasswordPanel();
+                _passwordRoomId = null;
+                ShowTip("该房间已解散，已取消加入");
+            }
+
             _btnCreate.gameObject.SetActive(_items.Count > 0);
             if (_items.Count == 0)
             {
                 ShowTip("暂无可加入的房间");
             }
+        }
+
+        private int FindItemRoom(string roomId)
+        {
+            for (int i = 0; i < _items.Count; i++)
+            {
+                if (_items[i].Entry.RoomId == roomId)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
 
         private void SelectItem(RoomItem item, bool preservePendingPassword = false)
@@ -283,6 +317,7 @@ namespace GameLogic
                 return;
             }
 
+            _passwordRoomId = _selectedEntry.RoomId;
             JoinAsync(_selectedEntry).Forget();
         }
 
@@ -299,6 +334,7 @@ namespace GameLogic
             _joining = true;
             RoomOpResult result = await RoomManager.Instance.JoinRoomAsync(entry);
             _joining = false;
+            _passwordRoomId = null;
 
             if (IsDestroyed)
             {
