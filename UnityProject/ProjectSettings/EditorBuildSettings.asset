@@ -9,9 +9,6 @@ EditorBuildSettings:
     path: Assets/AssetRaw/Scenes/Launcher.unity
     guid: 2cda990e2423bbf4892e6590ba056729
   - enabled: 1
-    path: Assets/AssetRaw/Scenes/Level.unity
-    guid: 415db20a34db3244e964ea2814287341
-  - enabled: 1
     path: Assets/AssetRaw/Scenes/Room.unity
     guid: e3765188b5d155d46a2a6490b5d55b13
   m_configObjects: {}

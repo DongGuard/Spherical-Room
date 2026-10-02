@@ -8,11 +8,11 @@
       "url": "https://packages.unity.com"
     },
     "com.code-philosophy.hybridclr": {
-      "version": "https://gitee.com/focus-creative-games/hybridclr_unity.git",
+      "version": "https://gitee.com/focus-creative-games/hybridclr_unity.git#v8.9.0",
       "depth": 0,
       "source": "git",
       "dependencies": {},
-      "hash": "756b906a215feb6eed414fb56c0f5758220096ae"
+      "hash": "77d4aec034886021893525956578945c722fd59e"
     },
     "com.cysharp.unitask": {
       "version": "file:UniTask",
