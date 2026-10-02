@@ -79,6 +79,7 @@ namespace GameLogic
         public delegate void JoinRequestHandler(CSteamID lobby, CSteamID inviter);
 
         private Callback<GameLobbyJoinRequested_t> _joinRequested;
+        private Callback<GameRichPresenceJoinRequested_t> _richPresenceJoin;
         private CallResult<LobbyCreated_t> _lobbyCreated;
         private CallResult<LobbyMatchList_t> _lobbyList;
         private CallResult<LobbyEnter_t> _lobbyEnter;
@@ -114,6 +115,7 @@ namespace GameLogic
             }
 
             _joinRequested = Callback<GameLobbyJoinRequested_t>.Create(OnJoinRequested);
+            _richPresenceJoin = Callback<GameRichPresenceJoinRequested_t>.Create(OnRichPresenceJoinRequested);
             _lobbyCreated = CallResult<LobbyCreated_t>.Create(OnLobbyCreated);
             _lobbyList = CallResult<LobbyMatchList_t>.Create(OnLobbyList);
             _lobbyEnter = CallResult<LobbyEnter_t>.Create(OnLobbyEntered);
@@ -127,6 +129,7 @@ namespace GameLogic
             }
 
             _joinRequested?.Dispose();
+            _richPresenceJoin?.Dispose();
             _lobbyCreated?.Dispose();
             _lobbyList?.Dispose();
             _lobbyEnter?.Dispose();
@@ -193,7 +196,6 @@ namespace GameLogic
             // 过滤条件只对紧接着的一次 RequestLobbyList 生效
             SteamMatchmaking.AddRequestLobbyListStringFilter(KeyGame, GameTag, ELobbyComparison.k_ELobbyComparisonEqual);
             SteamMatchmaking.AddRequestLobbyListStringFilter(KeyVersion, RoomProtocol.Version.ToString(), ELobbyComparison.k_ELobbyComparisonEqual);
-            SteamMatchmaking.AddRequestLobbyListFilterSlotsAvailable(1);
             SteamMatchmaking.AddRequestLobbyListDistanceFilter(ELobbyDistanceFilter.k_ELobbyDistanceFilterWorldwide);
             SteamMatchmaking.AddRequestLobbyListResultCountFilter(MaxListResults);
             _lobbyList.Set(SteamMatchmaking.RequestLobbyList());
@@ -256,6 +258,7 @@ namespace GameLogic
             }
 
             Debug.Log($"[SteamLobby] 离开大厅 {CurrentLobby}");
+            ClearPresence();
             CurrentLobby = CSteamID.Nil;
             _publishedData.Clear();
         }
@@ -301,11 +304,10 @@ namespace GameLogic
             SetData(KeyMembers, room.Members.Count.ToString());
             SetData(KeyMax, room.MaxPlayers.ToString());
 
-            if (_publishedJoinable != joinable)
-            {
-                _publishedJoinable = joinable;
-                SteamMatchmaking.SetLobbyJoinable(CurrentLobby, joinable);
-            }
+            // 不再切换 SetLobbyJoinable：关闭时 Steam 索引会延迟很久才从搜索恢复，
+            // 可加入性统一由列表数据（AllowMidJoin/Phase/人数）与主机认证判定
+
+            SetJoinablePresence();
         }
 
         /// <summary>
@@ -409,6 +411,7 @@ namespace GameLogic
 
             result.Success = true;
             int count = (int)data.m_nLobbiesMatching;
+            Debug.Log($"[SteamLobby] 搜索到 {count} 个大厅");
             for (int i = 0; i < count; i++)
             {
                 RoomListEntry entry = ReadLobbyEntry(SteamMatchmaking.GetLobbyByIndex(i));
@@ -456,6 +459,7 @@ namespace GameLogic
 
             CurrentLobby = lobby;
             _publishedData.Clear();
+            SetJoinablePresence();
             SteamLobbyResult result = SteamLobbyResult.Ok(lobby);
             result.Entry = entry;
             result.Host = new CSteamID(entry.HostSteamId);
@@ -472,6 +476,44 @@ namespace GameLogic
         {
             Debug.Log($"[SteamLobby] 收到加入请求 {data.m_steamIDLobby}");
             JoinRequested?.Invoke(data.m_steamIDLobby, data.m_steamIDFriend);
+        }
+
+        /// <summary>
+        /// 好友列表"加入游戏"按钮：Steam 把 connect 字符串（大厅 ID）投递给本进程，
+        /// 与 lobby 邀请共用同一条加入链路
+        /// </summary>
+        private void OnRichPresenceJoinRequested(GameRichPresenceJoinRequested_t data)
+        {
+            Debug.Log($"[SteamLobby] 收到 Rich Presence 加入 {data.m_rgchConnect}（来自 {data.m_steamIDFriend}）");
+            if (ulong.TryParse(data.m_rgchConnect, out ulong lobbyId))
+            {
+                JoinRequested?.Invoke(new CSteamID(lobbyId), data.m_steamIDFriend);
+            }
+        }
+
+        /// <summary>把大厅 ID 写入 Rich Presence：好友列表才会出现可用的"加入游戏"按钮</summary>
+        private void SetJoinablePresence()
+        {
+            try
+            {
+                SteamFriends.SetRichPresence("connect", CurrentLobby.m_SteamID.ToString());
+                SteamFriends.SetRichPresence("status", "在房间中");
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[SteamLobby] 设置 Rich Presence 失败: {e.Message}");
+            }
+        }
+
+        private void ClearPresence()
+        {
+            try
+            {
+                SteamFriends.ClearRichPresence();
+            }
+            catch (Exception)
+            {
+            }
         }
 
         #endregion

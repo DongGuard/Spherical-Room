@@ -79,6 +79,17 @@ public class SteamManager : MonoBehaviour {
 		// We want our SteamManager Instance to persist across scenes.
 		DontDestroyOnLoad(gameObject);
 
+		// 没有 steam_appid.txt（打包版 exe 旁 / 编辑器项目根）时完全跳过 Steam 初始化：
+		// RestartAppIfNecessary 对无效 AppID 的原生 Fatal Error 会直接终止进程（C# 捕获不住），
+		// 跳过一切原生调用，让游戏走本地 / 局域网模式
+		if (!System.IO.File.Exists("steam_appid.txt") &&
+		    !System.IO.File.Exists(System.IO.Path.Combine(Application.dataPath, "..", "steam_appid.txt")))
+		{
+			m_bInitialized = false;
+			UnityEngine.Debug.LogWarning("[Steamworks.NET] 未找到 steam_appid.txt，跳过 Steam 初始化（本地 / 局域网模式）");
+			return;
+		}
+
 		if (!Packsize.Test()) {
 			Debug.LogError("[Steamworks.NET] Packsize Test returned false, the wrong version of Steamworks.NET is being run in this platform.", this);
 		}

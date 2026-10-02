@@ -115,6 +115,12 @@ namespace TEngine
         /// </summary>
         private void Awake()
         {
+            // 第一个实例是正主（DontDestroyOnLoad），场景内重复实例自毁时不应关闭全局模块
+            if (s_mainInstance == null)
+            {
+                s_mainInstance = this;
+            }
+
             _instance = this;
             InitTextHelper();
             InitLogHelper();
@@ -159,8 +165,18 @@ namespace TEngine
             StopAllCoroutines();
         }
 
+        private static RootModule s_mainInstance;
+
         private void OnDestroy()
         {
+            // 只有正主实例被销毁才关闭全局模块系统；
+            // 场景内重复的 GameEntry 自毁时触发 OnDestroy，如果也 Shutdown
+            // 会把 UpdateDriver 等核心驱动一起销毁，后续所有 IUpdate 永远停摆
+            if (this != s_mainInstance)
+            {
+                return;
+            }
+
 #if !UNITY_EDITOR
             ModuleSystem.Shutdown();
 #endif

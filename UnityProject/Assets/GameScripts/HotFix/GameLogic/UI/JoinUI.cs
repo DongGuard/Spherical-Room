@@ -395,6 +395,8 @@ namespace GameLogic
 
             _passwordTcs = null;
             _mtmp_InputFieldpass.DeactivateInputField();
+            _rectEnterPass.gameObject.SetActive(false);
+            ShowTip("正在验证并连接房间...");
             tcs.TrySetResult(_mtmp_InputFieldpass.text);
         }
 

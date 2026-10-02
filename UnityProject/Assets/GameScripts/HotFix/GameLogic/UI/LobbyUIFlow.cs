@@ -160,6 +160,10 @@ namespace GameLogic
                 {
                     Log.Error($"[LobbyUI] 返回主菜单场景失败: {e}");
                 }
+
+                // 等一帧让场景卸载完全结束再开窗口：切换瞬间异步加载 UI 会撞上
+                // 资源系统的卸载竞态（TEngine LoadGameObjectAsync 拿到 null 抛 Source gameObject is null）
+                await UniTask.Yield();
             }
 
             ShowMenu();

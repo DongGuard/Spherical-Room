@@ -195,7 +195,7 @@ namespace GameLogic
             bool waiting = room.Phase == RoomPhase.Waiting;
 
             _toggleJob.SetIsOnWithoutNotify(room.AllowMidJoin);
-            _toggleJob.interactable = isHost && waiting;
+            _toggleJob.interactable = isHost;
 
             _mtmp_textPassValue.gameObject.SetActive(room.HasPassword);
             if (room.HasPassword)

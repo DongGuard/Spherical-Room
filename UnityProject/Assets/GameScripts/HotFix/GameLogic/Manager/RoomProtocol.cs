@@ -108,6 +108,9 @@ namespace GameLogic
         public string Password;
         public string PlayerName;
         public ulong SteamId;
+
+        /// <summary>是否来自 Steam 邀请/好友加入（免密码，房间列表加入仍需密码）。</summary>
+        public bool FromInvite;
     }
 
     /// <summary>

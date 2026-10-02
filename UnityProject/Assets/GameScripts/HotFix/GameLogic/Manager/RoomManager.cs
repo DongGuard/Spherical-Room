@@ -267,8 +267,19 @@ namespace GameLogic
 #endif
         }
 
+        private int _frameCount;
+
         public void OnUpdate()
         {
+            _frameCount++;
+            if (_frameCount % 300 == 0)
+            {
+                UnityEngine.Debug.Log($"[Room][诊断] OnUpdate 活着: 帧={_frameCount} unscaledTime={Time.unscaledTime:F1} " +
+                                      $"timeScale={Time.timeScale} fps={1f / Time.smoothDeltaTime:F0} " +
+                                      $"IsHost={IsHost} inGame={_inGame} phase={_serverPhase} " +
+                                      $"距下次球={_nextBallSpawnTime - Time.unscaledTime:F1}s 球数={_balls.Count}");
+            }
+
             _lan.Poll();
 
             if (_inGame && Input.GetKeyDown(KeyCode.Escape))
@@ -282,20 +293,37 @@ namespace GameLogic
         /// <summary>
         /// 定时生成：由主机控制，游戏中每 15 秒在房间内随机位置生成一个球。
         /// </summary>
+        private float _nextTickDiagLog;
+
         private void UpdateBallSpawnTimer()
         {
-            if (!IsHost || !_inGame || _serverPhase != RoomPhase.Playing)
+            bool active = IsHost && _inGame && _serverPhase == RoomPhase.Playing;
+            bool waiting = active && Time.unscaledTime < _nextBallSpawnTime;
+            if (!active || waiting)
             {
-                return;
-            }
+                // 暂停与等待 tick 都每 10 秒报一次状态，保证任何阶段可观测
+                if (Time.unscaledTime >= _nextTickDiagLog)
+                {
+                    _nextTickDiagLog = Time.unscaledTime + 10f;
+                    UnityEngine.Debug.Log($"[Room][诊断] 生球计时{(active ? "等待" : "暂停")}: " +
+                                          $"IsHost={IsHost} inGame={_inGame} phase={_serverPhase} 距下次={_nextBallSpawnTime - Time.unscaledTime:F1}s");
+                }
 
-            if (Time.unscaledTime < _nextBallSpawnTime)
-            {
-                return;
+                if (!active)
+                {
+                    return;
+                }
+
+                if (waiting)
+                {
+                    return;
+                }
             }
 
             _nextBallSpawnTime = Time.unscaledTime + BallSpawnInterval;
-            SpawnBallAt(RandomBallPosition());
+            Vector3 spawnPos = RandomBallPosition();
+            SpawnBallAt(spawnPos);
+            UnityEngine.Debug.Log($"[Room][诊断] 定时生成球，位置={spawnPos}");
         }
 
         private Vector3 RandomBallPosition()
@@ -509,7 +537,7 @@ namespace GameLogic
 
         private void TryAddListEntry(RoomListEntry entry)
         {
-            if (entry == null || !entry.CanJoin(out _))
+            if (entry == null)
             {
                 return;
             }
@@ -611,7 +639,7 @@ namespace GameLogic
                 return RoomOpResult.Fail(lobby.Message);
             }
 
-            return await ConnectSteamAsync(lobby, password);
+            return await ConnectSteamAsync(lobby, password, fromInvite: false);
 #else
             return RoomOpResult.Fail("当前平台不支持 Steam 房间");
 #endif
@@ -674,6 +702,19 @@ namespace GameLogic
                 result = RoomOpResult.Fail("加入房间失败");
             }
 
+            // 邀请加入没有对应 UI 监听 OperationFinished，失败时必须显式提示，不能静默无反应
+            if (!result.Success && !result.IsCancelled)
+            {
+                GameModule.UI.ShowUI<TipsUI>(result.Message, true);
+            }
+
+            // 成功后的窗口分流（列表路径由 JoinUI 处理，邀请路径在这里补上）：
+            // 等待中 → 进房间窗口显示形象；已开局 → 由 OnRoomStateMessage 自动进入游戏
+            if (result.Success && _room != null && _room.Phase == RoomPhase.Waiting)
+            {
+                LobbyUIFlow.Instance.ShowRoom();
+            }
+
             EndOperation(result);
             return result;
         }
@@ -689,31 +730,25 @@ namespace GameLogic
             SteamLobbyResult lobby = await SteamLobby.Instance.JoinLobbyAsync(lobbyId);
             if (!lobby.Success)
             {
+                Log.Warning($"[Room][诊断] 邀请加入：进大厅失败 {lobby.Message}");
                 return RoomOpResult.Fail(lobby.Message);
             }
 
+            Log.Info($"[Room][诊断] 邀请加入：大厅数据 Phase={lobby.Entry?.Phase} AllowMidJoin={lobby.Entry?.AllowMidJoin} " +
+                     $"成员={lobby.Entry?.Members}/{lobby.Entry?.MaxPlayers} 密码={lobby.Entry?.HasPassword} 版本={lobby.Entry?.Version}");
             if (!lobby.Entry.CanJoin(out string reason))
             {
+                Log.Warning($"[Room][诊断] 邀请加入被拒：{reason}");
                 SteamLobby.Instance.LeaveLobby();
                 return RoomOpResult.Fail(reason);
             }
 
-            string password = null;
-            if (lobby.Entry.HasPassword)
-            {
-                password = await PromptPasswordAsync(lobby.Entry.Name, "正在加入好友的房间...");
-                if (password == null)
-                {
-                    SteamLobby.Instance.LeaveLobby();
-                    return RoomOpResult.Cancelled();
-                }
-            }
-
+            // Steam 邀请/好友加入免密码（能被邀请即为凭据），房间列表加入仍需密码
             BeginClientRoom();
-            return await ConnectSteamAsync(lobby, password);
+            return await ConnectSteamAsync(lobby, null, fromInvite: true);
         }
 
-        private async UniTask<RoomOpResult> ConnectSteamAsync(SteamLobbyResult lobby, string password)
+        private async UniTask<RoomOpResult> ConnectSteamAsync(SteamLobbyResult lobby, string password, bool fromInvite)
         {
             if (lobby.Host == SteamUser.GetSteamID())
             {
@@ -721,7 +756,7 @@ namespace GameLogic
                 return RoomOpResult.Fail("不能通过 Steam 加入同一个 Steam 账号创建的房间。\n同一台电脑测试请加入标记为“局域网”的房间。");
             }
 
-            RoomOpResult result = await ConnectAsync(_session.JoinSteamAsync(lobby.Host, BuildJoinRequest(password)));
+            RoomOpResult result = await ConnectAsync(_session.JoinSteamAsync(lobby.Host, BuildJoinRequest(password, fromInvite)));
             if (!result.Success)
             {
                 SteamLobby.Instance.LeaveLobby();
@@ -814,7 +849,11 @@ namespace GameLogic
         {
             if (PasswordPrompt == null)
             {
-                return string.Empty;
+                // 空闲时从邀请直达（加入列表未打开，没有密码输入 UI）：
+                // 提示改走列表加入，避免用空密码去撞认证
+                Log.Warning("[Room][诊断] 房间需要密码但当前没有密码输入 UI");
+                GameModule.UI.ShowUI<TipsUI>("该房间需要密码，请从加入列表选择该房间输入密码", true);
+                return null;
             }
 
             string password = await PasswordPrompt(roomName);
@@ -900,6 +939,7 @@ namespace GameLogic
             NetworkServer.SpawnObjects();
             SpawnBall();
             _nextBallSpawnTime = Time.unscaledTime + BallSpawnInterval;
+            UnityEngine.Debug.Log($"[Room][诊断] 生球计时已启动，{BallSpawnInterval} 秒后首颗定时球");
 
             // 成员收到 Playing 后各自加载场景，再 Ready + AddPlayer
             _serverPhase = RoomPhase.Playing;
@@ -1260,7 +1300,8 @@ namespace GameLogic
                 return;
             }
 
-            SpawnBallAt(_ballPrefab.transform.position);
+            // 开局球与定时球同规则随机落点，避免每局都固定在预制体摆位
+            SpawnBallAt(RandomBallPosition());
         }
 
         private void SpawnBallAt(Vector3 position)
@@ -1274,6 +1315,7 @@ namespace GameLogic
             ball.name = _ballPrefab.name;
             NetworkServer.Spawn(ball);
             _balls.Add(ball);
+            UnityEngine.Debug.Log($"[Room][诊断] 球已生成并同步，当前球数={_balls.Count}，位置={position}");
         }
 
         private void CollectSpawnPoints()
@@ -1332,7 +1374,7 @@ namespace GameLogic
                 return "游戏已开始，该房间不允许中途加入";
             }
 
-            if (_settings.HasPassword &&
+            if (_settings.HasPassword && !request.FromInvite &&
                 !string.Equals(request.Password ?? string.Empty, _settings.Password, StringComparison.Ordinal))
             {
                 return "密码错误";
@@ -1502,7 +1544,7 @@ namespace GameLogic
 
         private RoomListEntry BuildLanAdvertisement()
         {
-            if (_settings == null || !_session.IsHost || !IsJoinable())
+            if (_settings == null || !_session.IsHost)
             {
                 return null;
             }
@@ -1634,14 +1676,15 @@ namespace GameLogic
             return true;
         }
 
-        private RoomJoinRequestMessage BuildJoinRequest(string password)
+        private RoomJoinRequestMessage BuildJoinRequest(string password, bool fromInvite = false)
         {
             return new RoomJoinRequestMessage
             {
                 Version = RoomProtocol.Version,
                 Password = RoomProtocol.Sanitize(password, RoomProtocol.MaxPasswordLength),
                 PlayerName = _playerName,
-                SteamId = GetLocalSteamId()
+                SteamId = GetLocalSteamId(),
+                FromInvite = fromInvite
             };
         }
 

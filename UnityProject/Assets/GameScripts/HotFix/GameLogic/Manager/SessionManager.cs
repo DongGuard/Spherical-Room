@@ -51,7 +51,7 @@ namespace GameLogic
         /// <summary>
         /// 加入时等待连接 + 认证的最长时间，传输层自身也有超时，这里兜底。
         /// </summary>
-        private const int JoinTimeoutMs = 40000;
+        private const int JoinTimeoutMs = 20000;
 
         public delegate void StateChangedHandler(SessionState state);
 
@@ -74,6 +74,7 @@ namespace GameLogic
         private string _lastTransportError;
         private int _sessionSerial;
         private UniTaskCompletionSource<RoomOpResult> _joinTcs;
+        private System.DateTime _joinStartUtc;
 
         /// <summary>
         /// 仅服务端：已通过认证的连接（含 Host 本地连接）。
@@ -348,7 +349,8 @@ namespace GameLogic
                 return RoomOpResult.Fail("无法启动网络连接");
             }
 
-            Log.Info($"[Session] 正在连接 {address}（{transport.GetType().Name}）");
+            UnityEngine.Debug.Log($"[Session][诊断] 开始连接 {address}（{transport.GetType().Name}）");
+            _joinStartUtc = System.DateTime.UtcNow;
             JoinTimeoutAsync(tcs, _sessionSerial).Forget();
             return await tcs.Task;
         }
@@ -532,6 +534,9 @@ namespace GameLogic
             // 开局进入游戏场景后才手动 AddPlayer
             _manager.autoCreatePlayer = false;
 
+            // 主机即服务器：失焦时也必须持续模拟（否则切出窗口整个房间冻结）
+            Application.runInBackground = true;
+
             // NetworkAuthenticator 要求同物体上已有 NetworkManager
             _authenticator = go.AddComponent<RoomAuthenticator>();
             _manager.authenticator = _authenticator;
@@ -685,6 +690,8 @@ namespace GameLogic
 
         private void CompleteJoin(RoomOpResult result)
         {
+            UnityEngine.Debug.Log($"[Session][诊断] 加入结束: {(result.Success ? "成功" : result.Message)}，" +
+                                  $"耗时 {(System.DateTime.UtcNow - _joinStartUtc).TotalSeconds:F1}s");
             UniTaskCompletionSource<RoomOpResult> tcs = _joinTcs;
             _joinTcs = null;
             if (tcs != null)
