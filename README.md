@@ -3,17 +3,25 @@ Unity 6 多人联机
 
 Unity 6 四人派对。玩家在房间里推动共享球。开房的那台机器是主机，位置和物理只在主机上计算。
 
-## 运行
+## 运行说明
 1. 使用 Unity `6000.3.14f1` 打开 `UnityProject`。
 2. 打开 `Assets/AssetRaw/Scenes/Launcher.unity`，从该场景进入 Play。`Room` 由开局后加载，不要把它当启动场景。
 3. 一个人创建房间并开始游戏，另一个人从列表加入。
 4. Steam 已登录时，房间走 Steam 大厅，邀请走 Steam 好友。未登录、编辑器或 Development Build 下，同时提供局域网 KCP（默认端口 7777）。
 
 ## 网络方案
-
+联机方案:Mirror
 共享球只能有一份物理结果。若每个客户端各自模拟，两人同时撞同一颗球会算出两个位置。
 因此采用 Mirror 主机权威：客户端只上传输入，主机做角色移动和推球，再把结果下发。
 不单独架设专用服务器。人数上限 4，房主的机器兼任服务端即可。跨网使用 Steam（FizzySteamworks）做 NAT 穿透和好友邀请；局域网和 Steam 不可用时使用 KCP 直连。两边同时开放时用 Multiplex 挂在同一个主机上。房间阶段、成员这些低频数据整包同步；玩家位置用 `NetworkTransformReliable`，球用 `NetworkRigidbodyReliable`。
+
+| 方案 | 说明 / 原因 |
+| :--- | :--- |
+| **Mirror（最终选用）** | **兼顾局域网与 Steam P2P 穿透（通过 FizzySteamworks + KCP），主机权威模式与物理刚体同步支持完善，无额外云端流量成本。** |
+| Unity Netcode for GameObjects | 官方方案，但主机权威的刚体同步和现成传输层都不如 **Mirror** 直接。Steam 穿透和局域网还要另接。 |
+| Photon Fusion / PUN | 走云端中继，要账号和流量。局域网直连、Steam 好友邀请都不是它的默认路径，共享刚体也得自己绕一层。 |
+| FishNet | 模型和 **Mirror** 接近，也是服务器权威。**Mirror** 这边的传输、刚体组件和文档更齐。 |
+| 自己写套接字 | 连接、断线、生成物体、插值都要重做。四人推球用不上这套成本。 |
 
 ## 架构
 
